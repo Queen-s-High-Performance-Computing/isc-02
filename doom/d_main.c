@@ -22,6 +22,12 @@
 
 #include <ctype.h>
 #include <stdio.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/prctl.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -83,6 +89,31 @@
 //  calls all ?_Responder, ?_Ticker, and ?_Drawer,
 //  calls I_GetTime, I_StartFrame, and I_StartTic
 //
+static void D_ForkDemos(void)
+{
+    fflush(stdout);
+    fflush(stderr);
+
+    for (;;)
+    {
+        pid_t pid = fork();
+
+        if (pid == 0)
+        {
+            // If the parent is killed, take this child down with it.
+            prctl(PR_SET_PDEATHSIG, SIGKILL);
+            if (getppid() == 1)
+                _exit(1);
+            return;                 // child: play one demo
+        }
+        if (pid < 0)
+            I_Error("D_ForkDemos: fork failed");
+
+        while (waitpid(pid, NULL, 0) < 0 && errno == EINTR)
+            ;
+    }
+}
+
 void D_DoomLoop (void);
 
 // Location where savegames are stored
@@ -166,14 +197,17 @@ extern  boolean setsizeneeded;
 extern  int             showMessages;
 void R_ExecuteSetViewSize (void);
 
+// DOOMATHON: D_Display's state, moved to file scope so a new demo in the
+// same process can start from exactly the values a fresh process has.
+static  boolean		viewactivestate = false;
+static  boolean		menuactivestate = false;
+static  boolean		inhelpscreensstate = false;
+static  boolean		disp_fullscreen = false;
+static  gamestate_t		oldgamestate = -1;
+static  int			borderdrawcount;
+
 void D_Display (void)
 {
-    static  boolean		viewactivestate = false;
-    static  boolean		menuactivestate = false;
-    static  boolean		inhelpscreensstate = false;
-    static  boolean		fullscreen = false;
-    static  gamestate_t		oldgamestate = -1;
-    static  int			borderdrawcount;
     int				nowtime;
     int				tics;
     int				wipestart;
@@ -215,12 +249,12 @@ void D_Display (void)
 			break;
 		if (automapactive)
 			AM_Drawer ();
-		if (wipe || (viewheight != 200 && fullscreen) )
+		if (wipe || (viewheight != 200 && disp_fullscreen) )
 			redrawsbar = true;
 		if (inhelpscreensstate && !inhelpscreens)
 			redrawsbar = true;              // just put away the help screen
 		ST_Drawer (viewheight == 200, redrawsbar );
-		fullscreen = viewheight == 200;
+		disp_fullscreen = viewheight == 200;
 		break;
 
       case GS_INTERMISSION:
@@ -308,18 +342,16 @@ void D_Display (void)
     // wipe update
     wipe_EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
-    wipestart = I_GetTime () - 1;
+    // DOOMATHON: the original paced the melt by the wall clock (sleeping
+    // until each 1/35 s tic elapsed). Every melt step is still drawn, one
+    // tic at a time, but without waiting. These frames all belong to the
+    // same game tic, so only the final, fully melted frame is fingerprinted.
+    (void) nowtime;
+    (void) wipestart;
+    tics = 1;
 
     do
     {
-	do
-	{
-	    nowtime = I_GetTime ();
-	    tics = nowtime - wipestart;
-            I_Sleep(1);
-	} while (tics <= 0);
-        
-	wipestart = nowtime;
 	done = wipe_ScreenWipe(wipe_Melt
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
 	I_UpdateNoBlit ();
@@ -402,12 +434,48 @@ boolean D_GrabMouseCallback(void)
     return (gamestate == GS_LEVEL) && !demoplayback && !advancedemo;
 }
 
+// DOOMATHON: start the same timedemo again inside this process, so the
+// game data is loaded once per process instead of once per demo. Everything
+// a demo depends on is put back to its fresh-process value: the tic counters,
+// D_Display's state and the pending wipe. G_DoPlayDemo -> G_InitNew then
+// resets the game itself (random seeds, players, level). The first tic is
+// run without drawing, as D_DoomLoop does, so frames start at tic 2 again.
+extern char *defdemoname;
+extern int fuzzpos;
+
+static void D_RestartTimeDemo (void)
+{
+    demo_finished = false;
+    D_ResetTics ();
+
+    viewactivestate = false;
+    menuactivestate = false;
+    inhelpscreensstate = false;
+    disp_fullscreen = false;
+    oldgamestate = -1;
+    borderdrawcount = 0;
+    wipegamestate = GS_DEMOSCREEN;
+
+    ST_ResetDemoLoopState ();
+    fuzzpos = 0;            // r_draw.c: spectre fuzz pattern position
+
+    G_TimeDemo (defdemoname);
+    TryRunTics ();
+    R_ExecuteSetViewSize ();
+}
+
 void doomgeneric_Tick()
 {
     // frame syncronous IO operations
     I_StartFrame ();
 
     TryRunTics (); // will run at least one tic
+
+    if (demo_finished)
+    {
+        D_RestartTimeDemo ();
+        return;
+    }
 
     S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
@@ -436,6 +504,17 @@ void D_DoomLoop (void)
     	G_BeginRecording ();
 
     main_loop_started = true;
+
+    // DOOMATHON: with -demofork, this process has finished loading the game
+    // data and stops here, just before the demo starts. It then forks one
+    // child per demo: each child begins from an untouched copy of this
+    // state (no demo has run in it yet), plays the demo in full and exits;
+    // the parent waits and forks the next. Children stay in this process
+    // group, so the scorer still stops everything.
+    if (M_CheckParm("-demofork") > 0)
+    {
+        D_ForkDemos();
+    }
 
     TryRunTics();
 

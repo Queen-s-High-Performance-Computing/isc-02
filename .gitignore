@@ -18,3 +18,6 @@ frames/
 gmon.out
 callgrind.out.*
 perf.data*
+
+# macOS
+.DS_Store

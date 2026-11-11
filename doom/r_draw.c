@@ -132,16 +132,25 @@ void R_DrawColumn (void)
     // Inner loop that does the actual texture mapping,
     //  e.g. a DDA-lile scaling.
     // This is as fast as it gets.
-    do 
+    // Locals with restrict: a store through dest (a byte pointer may alias
+    // anything) otherwise forces dc_colormap and dc_source to be reloaded
+    // from memory on every pixel. Same arithmetic, same pixels.
     {
-	// Re-map color indices from wall texture column
-	//  using a lighting/special effects LUT.
-	*dest = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
-	
-	dest += SCREENWIDTH; 
-	frac += fracstep;
-	
-    } while (count--); 
+	const lighttable_t *restrict colormap = dc_colormap;
+	const byte *restrict source = dc_source;
+	byte *restrict d = dest;
+
+	do 
+	{
+	    // Re-map color indices from wall texture column
+	    //  using a lighting/special effects LUT.
+	    *d = colormap[source[(frac>>FRACBITS)&127]];
+	    
+	    d += SCREENWIDTH; 
+	    frac += fracstep;
+	    
+	} while (count--); 
+    }
 } 
 
 
@@ -622,20 +631,28 @@ void R_DrawSpan (void)
     // We do not check for zero spans here?
     count = ds_x2 - ds_x1;
 
-    do
+    // Locals with restrict, as in R_DrawColumn: keeps ds_colormap and
+    // ds_source in registers instead of reloading them for every pixel.
     {
-	// Calculate current texture index in u,v.
-        ytemp = (position >> 4) & 0x0fc0;
-        xtemp = (position >> 26);
-        spot = xtemp | ytemp;
+	const lighttable_t *restrict colormap = ds_colormap;
+	const byte *restrict source = ds_source;
+	byte *restrict d = dest;
 
-	// Lookup pixel from flat texture tile,
-	//  re-index using light/colormap.
-	*dest++ = ds_colormap[ds_source[spot]];
+	do
+	{
+	    // Calculate current texture index in u,v.
+	    ytemp = (position >> 4) & 0x0fc0;
+	    xtemp = (position >> 26);
+	    spot = xtemp | ytemp;
 
-        position += step;
+	    // Lookup pixel from flat texture tile,
+	    //  re-index using light/colormap.
+	    *d++ = colormap[source[spot]];
 
-    } while (count--);
+	    position += step;
+
+	} while (count--);
+    }
 }
 
 

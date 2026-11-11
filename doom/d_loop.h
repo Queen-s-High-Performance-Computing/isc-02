@@ -77,5 +77,8 @@ void D_StartNetGame(net_gamesettings_t *settings,
 extern boolean singletics;
 extern int gametic, ticdup;
 
+extern boolean demo_finished;
+void D_ResetTics(void);
+
 #endif
 

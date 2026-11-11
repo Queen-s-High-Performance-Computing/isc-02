@@ -1,0 +1,10 @@
+On your Mac: /Volumes/Disk/QHPC/DOOMATHON/isc-02
+
+This is the repo clone, on branch main, with the optimizations still uncommitted. It’s set in the “ISC-02 repo setup” chat and the notes file.
+Benchmark results go in /Volumes/Disk/QHPC/DOOMATHON/isc-02/benchmarks/.
+In that chat I worked on it through the desktop bridge, where the same folder showed up as $HOME/mnt/DOOMATHON/isc-02. That’s the same folder seen from my side, not a separate copy.
+
+On the cluster: ~/isc-02, which is /global/teaching-home/sa6079049/isc-02
+
+This was cloned from GitHub (Queen-s-High-Performance-Computing/isc-02) with git checkout opt.
+Results go in ~/isc-02/benchmarks/, where your hardware probe file already is.

@@ -662,11 +662,16 @@ ST_Responder (event_t* ev)
 
 
 
+// DOOMATHON: these were function-local statics in ST_calcPainOffset and
+// ST_updateFaceWidget; at file scope -demoloop can reset them.
+static int	lastcalc;
+static int	oldhealth = -1;
+static int	lastattackdown = -1;
+static int	priority = 0;
+
 int ST_calcPainOffset(void)
 {
     int		health;
-    static int	lastcalc;
-    static int	oldhealth = -1;
     
     health = plyr->health > 100 ? 100 : plyr->health;
 
@@ -690,8 +695,6 @@ void ST_updateFaceWidget(void)
     int		i;
     angle_t	badguyangle;
     angle_t	diffang;
-    static int	lastattackdown = -1;
-    static int	priority = 0;
     boolean	doevilgrin;
 
     if (priority < 10)
@@ -1189,6 +1192,24 @@ void ST_unloadGraphics(void)
 void ST_unloadData(void)
 {
     ST_unloadGraphics();
+}
+
+// DOOMATHON: put every status-bar variable that ST_Start does not reset
+// back to its value in a fresh process (used by -demoloop only; within one
+// demo these persist across levels exactly as in the original).
+void ST_ResetDemoLoopState(void)
+{
+    lastcalc = 0;
+    oldhealth = -1;
+    lastattackdown = -1;
+    priority = 0;
+    st_msgcounter = 0;
+    st_fragscount = 0;
+    st_oldhealth = -1;
+    st_facecount = 0;
+    st_faceindex = 0;
+    st_randomnumber = 0;
+    st_palette = 0;
 }
 
 void ST_initData(void)

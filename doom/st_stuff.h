@@ -86,4 +86,6 @@ extern cheatseq_t cheat_clev;
 extern cheatseq_t cheat_mypos;
 
 
+void ST_ResetDemoLoopState(void);
+
 #endif

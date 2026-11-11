@@ -1,0 +1,555 @@
+frnt201.frontenac.local
+Architecture:                         x86_64
+CPU op-mode(s):                       32-bit, 64-bit
+Address sizes:                        46 bits physical, 57 bits virtual
+Byte Order:                           Little Endian
+CPU(s):                               128
+On-line CPU(s) list:                  0-127
+Vendor ID:                            GenuineIntel
+Model name:                           Intel(R) Xeon(R) Gold 6430
+CPU family:                           6
+Model:                                143
+Thread(s) per core:                   2
+Core(s) per socket:                   32
+Socket(s):                            2
+Stepping:                             8
+CPU(s) scaling MHz:                   100%
+CPU max MHz:                          3400.0000
+CPU min MHz:                          800.0000
+BogoMIPS:                             4200.00
+Flags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cat_l2 cdp_l3 invpcid_single cdp_l2 ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect avx_vnni avx512_bf16 wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke waitpkg avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq la57 rdpid bus_lock_detect cldemote movdiri movdir64b enqcmd fsrm md_clear serialize tsxldtrk pconfig arch_lbr amx_bf16 avx512_fp16 amx_tile amx_int8 flush_l1d arch_capabilities
+Virtualization:                       VT-x
+L1d cache:                            3 MiB (64 instances)
+L1i cache:                            2 MiB (64 instances)
+L2 cache:                             128 MiB (64 instances)
+L3 cache:                             120 MiB (2 instances)
+NUMA node(s):                         2
+NUMA node0 CPU(s):                    0-31,64-95
+NUMA node1 CPU(s):                    32-63,96-127
+Vulnerability Gather data sampling:   Not affected
+Vulnerability Itlb multihit:          Not affected
+Vulnerability L1tf:                   Not affected
+Vulnerability Mds:                    Not affected
+Vulnerability Meltdown:               Not affected
+Vulnerability Mmio stale data:        Not affected
+Vulnerability Reg file data sampling: Not affected
+Vulnerability Retbleed:               Not affected
+Vulnerability Spec rstack overflow:   Not affected
+Vulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; RSB filling; PBRSB-eIBRS SW sequence; BHI BHI_DIS_S
+Vulnerability Srbds:                  Not affected
+Vulnerability Tsx async abort:        Not affected
+Vulnerability Vmscape:                Mitigation; IBPB before exit to userspace
+available: 2 nodes (0-1)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+node 0 size: 128415 MB
+node 0 free: 122211 MB
+node 1 cpus: 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127
+node 1 size: 129004 MB
+node 1 free: 104352 MB
+node distances:
+node   0   1 
+  0:  10  21 
+  1:  21  10 
+               total        used        free      shared  buff/cache   available
+Mem:             251          13         221           2          16         233
+Swap:              3           0           3
+Cpus_allowed_list:	0-7,64-71
+0,64
+10,74
+11,75
+12,76
+13,77
+14,78
+15,79
+1,65
+16,80
+17,81
+make: Entering directory '/global/teaching-home/sa6079049/isc-02-stock/doom'
+rm -rf build doomgeneric doomgeneric.map
+make: Leaving directory '/global/teaching-home/sa6079049/isc-02-stock/doom'
+make: Entering directory '/global/teaching-home/sa6079049/isc-02-stock/doom'
+mkdir -p build
+[Compiling dummy.c]
+[Compiling am_map.c]
+[Compiling doomdef.c]
+[Compiling doomstat.c]
+[Compiling dstrings.c]
+[Compiling d_event.c]
+[Compiling d_items.c]
+[Compiling d_iwad.c]
+[Compiling d_loop.c]
+[Compiling d_main.c]
+[Compiling d_mode.c]
+[Compiling d_net.c]
+[Compiling f_finale.c]
+[Compiling f_wipe.c]
+[Compiling g_game.c]
+[Compiling hu_lib.c]
+[Compiling hu_stuff.c]
+[Compiling info.c]
+[Compiling i_cdmus.c]
+[Compiling i_endoom.c]
+[Compiling i_joystick.c]
+[Compiling i_scale.c]
+[Compiling i_sound.c]
+[Compiling i_system.c]
+[Compiling i_timer.c]
+[Compiling memio.c]
+i_sound.c: In function ‘I_BindSoundVariables’:
+i_sound.c:398:18: warning: unused variable ‘libsamplerate_scale’ [-Wunused-variable]
+  398 |     extern float libsamplerate_scale;
+      |                  ^~~~~~~~~~~~~~~~~~~
+i_sound.c:397:16: warning: unused variable ‘use_libsamplerate’ [-Wunused-variable]
+  397 |     extern int use_libsamplerate;
+      |                ^~~~~~~~~~~~~~~~~
+[Compiling m_argv.c]
+[Compiling m_bbox.c]
+[Compiling m_cheat.c]
+[Compiling m_config.c]
+[Compiling m_controls.c]
+[Compiling m_fixed.c]
+[Compiling m_menu.c]
+[Compiling m_misc.c]
+[Compiling m_random.c]
+[Compiling p_ceilng.c]
+[Compiling p_doors.c]
+[Compiling p_enemy.c]
+[Compiling p_floor.c]
+[Compiling p_inter.c]
+[Compiling p_lights.c]
+[Compiling p_map.c]
+m_menu.c: In function ‘M_ReadSaveStrings’:
+m_menu.c:520:9: warning: ignoring return value of ‘fread’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  520 |         fread(&savegamestrings[i], 1, SAVESTRINGSIZE, handle);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Compiling p_maputl.c]
+[Compiling p_mobj.c]
+[Compiling p_plats.c]
+[Compiling p_pspr.c]
+p_maputl.c: In function ‘InterceptsOverrun’:
+p_maputl.c:849:43: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  849 |     InterceptsMemoryOverrun(location + 8, (int) intercept->d.thing);
+      |                                           ^
+[Compiling p_saveg.c]
+[Compiling p_setup.c]
+[Compiling p_sight.c]
+[Compiling p_spec.c]
+[Compiling p_switch.c]
+[Compiling p_telept.c]
+[Compiling p_tick.c]
+[Compiling p_user.c]
+[Compiling r_bsp.c]
+[Compiling r_data.c]
+[Compiling r_draw.c]
+[Compiling r_main.c]
+[Compiling r_plane.c]
+[Compiling r_segs.c]
+[Compiling r_sky.c]
+[Compiling r_things.c]
+[Compiling sha1.c]
+p_setup.c: In function ‘P_SetupLevel’:
+p_setup.c:780:43: warning: ‘%i’ directive output may be truncated writing between 2 and 10 bytes into a region of size 6 [-Wformat-truncation=]
+  780 |             DEH_snprintf(lumpname, 9, "map%i", map);
+      |                                           ^~
+p_setup.c:780:39: note: directive argument in the range [10, 2147483647]
+  780 |             DEH_snprintf(lumpname, 9, "map%i", map);
+      |                                       ^~~~~~~
+In file included from /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/stdio.h:906,
+                 from z_zone.h:27,
+                 from p_setup.c:24:
+In function ‘snprintf’,
+    inlined from ‘P_SetupLevel’ at p_setup.c:780:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 6 and 14 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+p_setup.c: In function ‘P_SetupLevel’:
+p_setup.c:778:44: warning: ‘%i’ directive output may be truncated writing between 1 and 11 bytes into a region of size 5 [-Wformat-truncation=]
+  778 |             DEH_snprintf(lumpname, 9, "map0%i", map);
+      |                                            ^~
+p_setup.c:778:39: note: directive argument in the range [-2147483648, 9]
+  778 |             DEH_snprintf(lumpname, 9, "map0%i", map);
+      |                                       ^~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘P_SetupLevel’ at p_setup.c:778:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 6 and 16 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+[Compiling sounds.c]
+[Compiling statdump.c]
+[Compiling st_lib.c]
+[Compiling st_stuff.c]
+[Compiling s_sound.c]
+statdump.c:39:18: warning: ‘doom2_par_times’ defined but not used [-Wunused-const-variable=]
+   39 | static const int doom2_par_times[] =
+      |                  ^~~~~~~~~~~~~~~
+statdump.c:33:18: warning: ‘doom1_par_times’ defined but not used [-Wunused-const-variable=]
+   33 | static const int doom1_par_times[] =
+      |                  ^~~~~~~~~~~~~~~
+[Compiling tables.c]
+[Compiling v_video.c]
+[Compiling wi_stuff.c]
+[Compiling w_checksum.c]
+[Compiling w_file.c]
+[Compiling w_main.c]
+[Compiling w_wad.c]
+[Compiling z_zone.c]
+[Compiling w_file_stdc.c]
+[Compiling i_input.c]
+[Compiling i_video.c]
+[Compiling doomgeneric.c]
+[Compiling platform.c]
+[Compiling launcher.c]
+wi_stuff.c: In function ‘WI_loadUnloadData’:
+wi_stuff.c:1596:53: warning: ‘%.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size between 0 and 5 [-Wformat-truncation=]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                                     ^~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 2147483647]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                               ^~~~~~~~~~~~~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 2147483646]
+In file included from /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/stdio.h:906,
+                 from wi_stuff.c:20:
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData’ at wi_stuff.c:1596:4:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 9 and 35 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+wi_stuff.c: In function ‘WI_loadUnloadData’:
+wi_stuff.c:1564:41: warning: ‘%2.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size 4 [-Wformat-truncation=]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                         ^~~~~
+wi_stuff.c:1564:35: note: directive argument in the range [0, 2147483647]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                   ^~~~~~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData’ at wi_stuff.c:1564:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 8 and 16 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+i_video.c: In function ‘I_FinishUpdate’:
+i_video.c:324:19: warning: variable ‘y_offset’ set but not used [-Wunused-but-set-variable]
+  324 |     int x_offset, y_offset, x_offset_end;
+      |                   ^~~~~~~~
+i_video.c: At top level:
+i_video.c:26:1: warning: ‘rcsid’ defined but not used [-Wunused-const-variable=]
+   26 | rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
+      | ^~~~~
+i_input.c:51:19: warning: ‘at_to_doom’ defined but not used [-Wunused-const-variable=]
+   51 | static const char at_to_doom[] =
+      |                   ^~~~~~~~~~
+[Linking doomgeneric]
+make: Leaving directory '/global/teaching-home/sa6079049/isc-02-stock/doom'
+make: Entering directory '/global/teaching-home/sa6079049/isc-02/doom'
+rm -rf build doomgeneric doomgeneric.map
+make: Leaving directory '/global/teaching-home/sa6079049/isc-02/doom'
+make: Entering directory '/global/teaching-home/sa6079049/isc-02/doom'
+mkdir -p build
+[Compiling dummy.c]
+[Compiling am_map.c]
+[Compiling doomdef.c]
+[Compiling doomstat.c]
+[Compiling dstrings.c]
+[Compiling d_event.c]
+[Compiling d_items.c]
+[Compiling d_iwad.c]
+[Compiling d_loop.c]
+[Compiling d_main.c]
+[Compiling d_mode.c]
+[Compiling f_finale.c]
+[Compiling d_net.c]
+[Compiling f_wipe.c]
+[Compiling g_game.c]
+[Compiling hu_lib.c]
+[Compiling hu_stuff.c]
+[Compiling info.c]
+[Compiling i_cdmus.c]
+[Compiling i_endoom.c]
+[Compiling i_joystick.c]
+[Compiling i_scale.c]
+[Compiling i_sound.c]
+[Compiling i_system.c]
+[Compiling i_timer.c]
+[Compiling memio.c]
+[Compiling m_argv.c]
+i_sound.c: In function ‘I_BindSoundVariables’:
+i_sound.c:398:18: warning: unused variable ‘libsamplerate_scale’ [-Wunused-variable]
+  398 |     extern float libsamplerate_scale;
+      |                  ^~~~~~~~~~~~~~~~~~~
+i_sound.c:397:16: warning: unused variable ‘use_libsamplerate’ [-Wunused-variable]
+  397 |     extern int use_libsamplerate;
+      |                ^~~~~~~~~~~~~~~~~
+[Compiling m_bbox.c]
+[Compiling m_cheat.c]
+[Compiling m_config.c]
+[Compiling m_controls.c]
+[Compiling m_fixed.c]
+[Compiling m_menu.c]
+[Compiling m_misc.c]
+[Compiling m_random.c]
+[Compiling p_ceilng.c]
+[Compiling p_doors.c]
+[Compiling p_enemy.c]
+[Compiling p_floor.c]
+[Compiling p_inter.c]
+m_menu.c: In function ‘M_ReadSaveStrings’:
+m_menu.c:520:9: warning: ignoring return value of ‘fread’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  520 |         fread(&savegamestrings[i], 1, SAVESTRINGSIZE, handle);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Compiling p_lights.c]
+[Compiling p_map.c]
+[Compiling p_maputl.c]
+[Compiling p_mobj.c]
+[Compiling p_plats.c]
+p_maputl.c: In function ‘InterceptsOverrun’:
+p_maputl.c:849:43: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+  849 |     InterceptsMemoryOverrun(location + 8, (int) intercept->d.thing);
+      |                                           ^
+[Compiling p_pspr.c]
+[Compiling p_saveg.c]
+[Compiling p_setup.c]
+[Compiling p_sight.c]
+[Compiling p_spec.c]
+[Compiling p_switch.c]
+[Compiling p_telept.c]
+[Compiling p_tick.c]
+[Compiling p_user.c]
+[Compiling r_bsp.c]
+[Compiling r_data.c]
+[Compiling r_draw.c]
+[Compiling r_main.c]
+[Compiling r_plane.c]
+[Compiling r_segs.c]
+p_setup.c: In function ‘P_SetupLevel’:
+p_setup.c:780:43: warning: ‘%i’ directive output may be truncated writing between 2 and 10 bytes into a region of size 6 [-Wformat-truncation=]
+  780 |             DEH_snprintf(lumpname, 9, "map%i", map);
+      |                                           ^~
+p_setup.c:780:39: note: directive argument in the range [10, 2147483647]
+  780 |             DEH_snprintf(lumpname, 9, "map%i", map);
+      |                                       ^~~~~~~
+In file included from /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/stdio.h:906,
+                 from z_zone.h:27,
+                 from p_setup.c:24:
+In function ‘snprintf’,
+    inlined from ‘P_SetupLevel’ at p_setup.c:780:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 6 and 14 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+p_setup.c: In function ‘P_SetupLevel’:
+p_setup.c:778:44: warning: ‘%i’ directive output may be truncated writing between 1 and 11 bytes into a region of size 5 [-Wformat-truncation=]
+  778 |             DEH_snprintf(lumpname, 9, "map0%i", map);
+      |                                            ^~
+p_setup.c:778:39: note: directive argument in the range [-2147483648, 9]
+  778 |             DEH_snprintf(lumpname, 9, "map0%i", map);
+      |                                       ^~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘P_SetupLevel’ at p_setup.c:778:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 6 and 16 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+[Compiling r_sky.c]
+[Compiling r_things.c]
+[Compiling sha1.c]
+[Compiling sounds.c]
+[Compiling statdump.c]
+[Compiling st_lib.c]
+[Compiling st_stuff.c]
+[Compiling s_sound.c]
+statdump.c:39:18: warning: ‘doom2_par_times’ defined but not used [-Wunused-const-variable=]
+   39 | static const int doom2_par_times[] =
+      |                  ^~~~~~~~~~~~~~~
+statdump.c:33:18: warning: ‘doom1_par_times’ defined but not used [-Wunused-const-variable=]
+   33 | static const int doom1_par_times[] =
+      |                  ^~~~~~~~~~~~~~~
+[Compiling tables.c]
+[Compiling v_video.c]
+[Compiling wi_stuff.c]
+[Compiling w_checksum.c]
+[Compiling w_file.c]
+[Compiling w_main.c]
+[Compiling w_wad.c]
+[Compiling z_zone.c]
+[Compiling w_file_stdc.c]
+[Compiling i_input.c]
+[Compiling i_video.c]
+[Compiling doomgeneric.c]
+[Compiling platform.c]
+[Compiling launcher.c]
+i_video.c: In function ‘I_FinishUpdate’:
+i_video.c:374:19: warning: variable ‘y_offset’ set but not used [-Wunused-but-set-variable]
+  374 |     int x_offset, y_offset, x_offset_end;
+      |                   ^~~~~~~~
+i_video.c: At top level:
+i_video.c:26:1: warning: ‘rcsid’ defined but not used [-Wunused-const-variable=]
+   26 | rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
+      | ^~~~~
+wi_stuff.c: In function ‘WI_loadUnloadData.constprop’:
+wi_stuff.c:1596:53: warning: ‘%.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size between 0 and 5 [-Wformat-truncation=]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                                     ^~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 2147483646]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                               ^~~~~~~~~~~~~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 3]
+In file included from /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/stdio.h:906,
+                 from wi_stuff.c:20:
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData.constprop’ at wi_stuff.c:1596:4:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 9 and 27 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+wi_stuff.c: In function ‘WI_loadUnloadData.constprop’:
+wi_stuff.c:1564:41: warning: ‘%2.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size 4 [-Wformat-truncation=]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                         ^~~~~
+wi_stuff.c:1564:35: note: directive argument in the range [0, 2147483646]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                   ^~~~~~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData.constprop’ at wi_stuff.c:1564:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 8 and 16 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+i_input.c:51:19: warning: ‘at_to_doom’ defined but not used [-Wunused-const-variable=]
+   51 | static const char at_to_doom[] =
+      |                   ^~~~~~~~~~
+wi_stuff.c: In function ‘WI_loadUnloadData.constprop’:
+wi_stuff.c:1596:53: warning: ‘%.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size between 0 and 5 [-Wformat-truncation=]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                                     ^~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 2147483646]
+ 1596 |                         DEH_snprintf(name, 9, "WIA%d%.2d%.2d", wbs->epsd, j, i);
+      |                                               ^~~~~~~~~~~~~~~
+wi_stuff.c:1596:47: note: directive argument in the range [0, 3]
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData.constprop’ at wi_stuff.c:1596:4:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 9 and 27 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+wi_stuff.c: In function ‘WI_loadUnloadData.constprop’:
+wi_stuff.c:1564:41: warning: ‘%2.2d’ directive output may be truncated writing between 2 and 10 bytes into a region of size 4 [-Wformat-truncation=]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                         ^~~~~
+wi_stuff.c:1564:35: note: directive argument in the range [0, 2147483646]
+ 1564 |             DEH_snprintf(name, 9, "CWILV%2.2d", i);
+      |                                   ^~~~~~~~~~~~
+In function ‘snprintf’,
+    inlined from ‘WI_loadUnloadData.constprop’ at wi_stuff.c:1564:6:
+/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/include/bits/stdio2.h:54:10: note: ‘__builtin___snprintf_chk’ output between 8 and 16 bytes into a destination of size 9
+   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   55 |                                    __glibc_objsize (__s), __fmt,
+      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   56 |                                    __va_arg_pack ());
+      |                                    ~~~~~~~~~~~~~~~~~
+[Linking doomgeneric]
+make: Leaving directory '/global/teaching-home/sa6079049/isc-02/doom'
+=== run 1 demo1 stock
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo1 demos in 30s (median of 1)
+=== run 1 demo1 opt
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 214 valid demos, 0 invalid
+SCORE: 214 valid demo1 demos in 30s (median of 1)
+=== run 1 demo2 stock
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo2 demos in 30s (median of 1)
+=== run 1 demo2 opt
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 233 valid demos, 0 invalid
+SCORE: 233 valid demo2 demos in 30s (median of 1)
+=== run 1 demo3 stock
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo3 demos in 30s (median of 1)
+=== run 1 demo3 opt
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 217 valid demos, 0 invalid
+SCORE: 217 valid demo3 demos in 30s (median of 1)
+=== run 2 demo1 stock
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo1 demos in 30s (median of 1)
+=== run 2 demo1 opt
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 220 valid demos, 0 invalid
+SCORE: 220 valid demo1 demos in 30s (median of 1)
+=== run 2 demo2 stock
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo2 demos in 30s (median of 1)
+=== run 2 demo2 opt
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 235 valid demos, 0 invalid
+SCORE: 235 valid demo2 demos in 30s (median of 1)
+=== run 2 demo3 stock
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo3 demos in 30s (median of 1)
+=== run 2 demo3 opt
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 215 valid demos, 0 invalid
+SCORE: 215 valid demo3 demos in 30s (median of 1)
+=== run 3 demo1 stock
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo1 demos in 30s (median of 1)
+=== run 3 demo1 opt
+Scoring demo1: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 224 valid demos, 0 invalid
+SCORE: 224 valid demo1 demos in 30s (median of 1)
+=== run 3 demo2 stock
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 64 valid demos, 0 invalid
+SCORE: 64 valid demo2 demos in 30s (median of 1)
+=== run 3 demo2 opt
+Scoring demo2: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 231 valid demos, 0 invalid
+SCORE: 231 valid demo2 demos in 30s (median of 1)
+=== run 3 demo3 stock
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 65 valid demos, 0 invalid
+SCORE: 65 valid demo3 demos in 30s (median of 1)
+=== run 3 demo3 opt
+Scoring demo3: 1 run(s) of 30s on frnt201.frontenac.local, 16 CPUs
+  run 1: 215 valid demos, 0 invalid
+SCORE: 215 valid demo3 demos in 30s (median of 1)

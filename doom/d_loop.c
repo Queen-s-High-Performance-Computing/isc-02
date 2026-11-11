@@ -809,6 +809,12 @@ void TryRunTics (void)
             memcpy(local_playeringame, set->ingame, sizeof(local_playeringame));
 
             loop_interface->RunTic(set->cmds, set->ingame);
+
+            // DOOMATHON: the demo ended inside this tic. The original exits
+            // here, so nothing more is run or drawn for this demo.
+            if (demo_finished)
+                return;
+
 	    gametic++;
 
 	    // modify command for duplicated tics
@@ -818,6 +824,15 @@ void TryRunTics (void)
 
 	NetUpdate ();	// check for new console commands
     }
+}
+
+// DOOMATHON: put the tic counters back to where a fresh process starts.
+void D_ResetTics(void)
+{
+    gametic = 0;
+    maketic = 0;
+    recvtic = 0;
+    memset(ticdata, 0, sizeof(ticdata));
 }
 
 void D_RegisterLoopCallbacks(loop_interface_t *i)

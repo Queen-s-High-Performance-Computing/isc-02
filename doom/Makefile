@@ -1,8 +1,12 @@
 # QHPC DOOMATHON build. Team-owned: change compiler flags freely.
-# Baseline flags are deliberately conservative (-Os optimizes for size).
+# -O3 for speed; -march=native uses every instruction set of the CPU it is
+# built on (AVX-512 on frnt201). Build inside a job on frnt201: the binary
+# may crash with "Illegal instruction" on older CPUs. OPT=... overrides the
+# optimization flags for experiments, e.g. make OPT="-O2".
 
 CC      = gcc
-CFLAGS  += -ggdb3 -Os -Wall -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE
+OPT     ?= -O3 -march=native
+CFLAGS  += -ggdb3 $(OPT) -Wall -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE
 LDFLAGS += -Wl,--gc-sections
 LIBS    += -lm -lc
 

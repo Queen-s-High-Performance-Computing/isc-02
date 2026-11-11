@@ -45,6 +45,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include <fcntl.h>
 
 #include <stdarg.h>
+#include <string.h>
 
 #include <sys/types.h>
 
@@ -318,9 +319,58 @@ void I_UpdateNoBlit (void)
 // I_FinishUpdate
 //
 
+// DOOMATHON: fast path for the only mode scored (RGBA8888, 2x scaling into
+// an exactly 640x400 buffer). The original converted pixel by pixel with a
+// per-pixel bpp branch and reloaded s_Fb on every store (char* aliasing).
+// Here each 8-bit index is looked up once in a prebuilt 32-bit palette, the
+// pixel is written twice, and the finished 640-pixel row is copied to the
+// row below. The output is bit-identical to the original loop.
+static uint32_t pal32[256];
+static boolean pal32_dirty = true;
+
+static void I_FinishUpdateFast (void)
+{
+    if (pal32_dirty)
+    {
+        int i;
+        for (i = 0; i < 256; i++)
+            pal32[i] = ((uint32_t)colors[i].r << s_Fb.red.offset) |
+                       ((uint32_t)colors[i].g << s_Fb.green.offset) |
+                       ((uint32_t)colors[i].b << s_Fb.blue.offset);
+        pal32_dirty = false;
+    }
+
+    const uint8_t *restrict in = I_VideoBuffer;
+    uint32_t *restrict out = (uint32_t *) DG_ScreenBuffer;
+    int y, x;
+
+    for (y = 0; y < SCREENHEIGHT; y++)
+    {
+        uint64_t *restrict o = (uint64_t *) out;
+        for (x = 0; x < SCREENWIDTH; x++)
+        {
+            uint64_t p = pal32[in[x]];
+            o[x] = p | (p << 32);
+        }
+        memcpy(out + DOOMGENERIC_RESX, out, DOOMGENERIC_RESX * sizeof(uint32_t));
+        in  += SCREENWIDTH;
+        out += 2 * DOOMGENERIC_RESX;
+    }
+
+    DG_DrawFrame();
+}
+
 void I_FinishUpdate (void)
 {
     int y;
+
+    if (s_Fb.bits_per_pixel == 32 && fb_scaling == 2
+     && s_Fb.xres == SCREENWIDTH * 2 && s_Fb.yres == SCREENHEIGHT * 2)
+    {
+        I_FinishUpdateFast();
+        return;
+    }
+
     int x_offset, y_offset, x_offset_end;
     unsigned char *line_in, *line_out;
 
@@ -404,6 +454,8 @@ void I_SetPalette (byte* palette)
 
     /* performance boost:
      * map to the right pixel format over here! */
+
+    pal32_dirty = true;
 
     for (i=0; i<256; ++i ) {
         colors[i].a = 0;

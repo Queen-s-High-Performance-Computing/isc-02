@@ -18,6 +18,7 @@
 
 
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -116,7 +117,10 @@ static byte *AutoAllocMemory(int *size, int default_ram, int min_ram)
 
         *size = default_ram * 1024 * 1024;
 
-        zonemem = malloc(*size);
+        // DOOMATHON: 2 MB-aligned so the zone can sit on huge pages.
+        zonemem = aligned_alloc(2u << 20, (*size + (2u << 20) - 1) & ~((2u << 20) - 1));
+        if (zonemem != NULL)
+            madvise(zonemem, *size, MADV_HUGEPAGE);
 
         // Failed to allocate?  Reduce zone size until we reach a size
         // that is acceptable.

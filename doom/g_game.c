@@ -110,6 +110,10 @@ boolean         sendsave;             	// send a save event next tic
 boolean         usergame;               // ok to save / end game 
  
 boolean         timingdemo;             // if true, exit with report on completion 
+// DOOMATHON: with -demoloop, a finished timedemo raises demo_finished
+// instead of exiting, and d_main.c restarts the same demo in this process.
+boolean         demo_loop;
+boolean         demo_finished;
 boolean         nodrawers;              // for comparative timing purposes 
 int             starttime;          	// for comparative timing purposes  	 
  
@@ -2226,11 +2230,19 @@ void G_TimeDemo (char* name)
     //
 
     nodrawers = M_CheckParm ("-nodraw"); 
+    demo_loop = M_CheckParm ("-demoloop") > 0;
 
     timingdemo = true; 
     singletics = true; 
 
-    defdemoname = name; 
+    // DOOMATHON: keep our own copy of the name; the caller's buffer does not
+    // outlive D_DoomMain, and -demoloop needs it for every restart.
+    {
+        static char demoloop_name[64];
+        if (name != demoloop_name)
+            M_StringCopy(demoloop_name, name, sizeof(demoloop_name));
+        defdemoname = demoloop_name;
+    }
     gameaction = ga_playdemo; 
 } 
  
@@ -2261,6 +2273,12 @@ boolean G_CheckDemoStatus (void)
         // Prevent recursive calls
         timingdemo = false;
         demoplayback = false;
+
+        if (demo_loop)
+        {
+            demo_finished = true;
+            return true;
+        }
 
 	I_Error ("timed %i gametics in %i realtics (%f fps)",
                  gametic, realtics, fps);
