@@ -1,0 +1,21 @@
+=== demo1: 3 runs of 120 s ===
+Scoring demo1: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 1080 valid demos, 0 invalid
+  run 2: 1080 valid demos, 0 invalid
+  run 3: 1084 valid demos, 0 invalid
+SCORE: 1080 valid demo1 demos in 120s (median of 3)
+   1084 DGVALID tics=7116 matched=7115
+=== demo2: 3 runs of 120 s ===
+Scoring demo2: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 1116 valid demos, 0 invalid
+  run 2: 1116 valid demos, 0 invalid
+  run 3: 1116 valid demos, 0 invalid
+SCORE: 1116 valid demo2 demos in 120s (median of 3)
+   1116 DGVALID tics=7088 matched=7088
+=== demo3: 3 runs of 120 s ===
+Scoring demo3: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 1022 valid demos, 0 invalid
+  run 2: 1024 valid demos, 0 invalid
+  run 3: 1022 valid demos, 0 invalid
+SCORE: 1022 valid demo3 demos in 120s (median of 3)
+   1022 DGVALID tics=6041 matched=6041
