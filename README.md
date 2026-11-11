@@ -4,6 +4,49 @@
 
 A *demo* is a recorded game that Doom plays back by itself. Your team decides how to run it: how many copies, how they're compiled, how they share the CPUs. Read [RULES.md](RULES.md) before you start, and [OPTIMIZATION.md](OPTIMIZATION.md) for ideas.
 
+
+
+## Submission
+
+### Best score
+
+**1116 valid demos in 120 s on demo2** (`scripts/score.sh demo2 120 3`, median of 3 runs, 0 invalid).
+
+Measured on frnt201 with **16 CPUs** (8 physical cores x 2 hardware threads, CPUs 0-7 and 64-71), the most a practice job may use. Slurm job 12449478, 2026-11-11 
+Not a full-node run: the official run uses all 128 CPUs, and `scripts/run.sh` uses every CPU it is given.
+
+### Results (frnt201, 16 CPUs, `scripts/score.sh <demo> 120 3`)
+
+| Demo | Run 1 | Run 2 | Run 3 | Score (median) | Invalid | Frames matched |
+|---|---|---|---|---|---|---|
+| demo1 | 1080 | 1080 | 1084 | **1080** | 0 | 7115 / 7116 tics |
+| demo2 | 1116 | 1116 | 1116 | **1116** | 0 | 7088 / 7088 tics |
+| demo3 | 1022 | 1024 | 1022 | **1022** | 0 | 6041 / 6041 tics |
+
+The three runs of each demo agree within 0.4%. Raw output: `benchmarks/run120-frnt201-20261111-0159.txt` and `benchmarks/run120-12449478.out`.
+
+### What I changed and why it helped
+
+Details and measurements for every change are in `TEAM-NOTES.md`.
+
+1. **Screen melt no longer waits on the clock.** The level-start "melt" transition slept about 1.1 s per demo. Every step is still drawn; it just doesn't sleep between them
+2. **Frame conversion rewritten** (`i_video.c`). Converting Doom's 320x200 image into the 640x400 frame took 70% of CPU time. It now uses a 32-bit palette built once, writes two pixels at a time and copies each finished row to the row below. The output is bit-identical.
+3. **Compiler flags** (`Makefile`): `-O3 -march=native -flto=auto` instead of `-Os`. Link-time optimization lets the compiler optimize across source files. `-fwrapv -fno-strict-aliasing` keep the 1993 code behaving the same on any compiler version.
+4. **Game data loaded once per process.** Each demo then runs in a freshly forked child process, so it starts from the clean pre-demo state and is computed in full from tic 0. The WAD file is read into memory once, so the timed run does no disk I/O.
+5. **Renderer inner loops** (`r_segs.c`, `r_draw.c`, `r_draw.h`, `r_things.c`). The wall loop keeps its working values in registers instead of re-reading globals after every pixel; wall and sprite columns are drawn 4 pixels per step with less arithmetic; floors and ceilings are drawn 8 pixels at a time with AVX-512.
+6. **A finished demo exits directly.** The original ended through an error handler that started a shell to look for a pop-up program, two extra processes per demo.
+7. **Launcher** (`scripts/run.sh`, `doom/d_workers.c`). One process per physical core loads the game, then starts one copy per hardware thread, each pinned to its own CPU and writing its own log. All copies start within milliseconds, every process stays in the scorer's process group, and each child is killed if its parent dies.
+
+Every frame is still the full 640x400 image and is validated. Beyond the official check, I compared all 256,000 pixels of every frame with the original engine on all three demos: they are identical wherever the original engine is itself repeatable
+
+### What limits now 
+
+- **CPU:** the renderer's inner loops (walls, floors, sprites) and branch mispredictions.
+- **Cache:** each copy rewrites a 1 MB frame every tic. Two copies on one core share its 2 MB L2 cache, so they push each other's data out to the L3.
+- **Memory bandwidth:** not a limit while frame buffers stay in L2/L3.
+- **Memory capacity, I/O, start-up:** not limits. Starting each demo takes about 2 ms, and the logs are one short line per demo.
+
+
 ## What's in here
 
 | Path | What it is | Can you change it? |
