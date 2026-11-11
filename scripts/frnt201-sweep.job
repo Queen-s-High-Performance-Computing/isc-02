@@ -1,0 +1,19 @@
+#!/bin/bash
+# Batch job for the tuning sweep on frnt201. Submit from inside the repo:
+#
+#   cd ~/isc-02 && sbatch scripts/frnt201-sweep.job
+#
+# Results: benchmarks/sweep-frnt201-<time>.txt and sweep-<jobid>.out
+#SBATCH --account=sg6079000
+#SBATCH --nodelist=frnt201
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem-per-cpu=1G
+#SBATCH --time=00:55:00
+#SBATCH --output=sweep-%j.out
+
+cd "${SLURM_SUBMIT_DIR:-$PWD}" || exit 1
+module load gcc
+hostname
+taskset -cp $$
+scripts/sweep.sh "${1:-all}"

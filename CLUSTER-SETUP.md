@@ -67,37 +67,53 @@ MODE=restart scripts/score.sh demo1 30 1
 ```
 Type `exit` to end the job.
 
-## 5. Tuning sweeps (batch job)
+## 5. Tuning sweep (batch job)
 
-Save as `~/sweep.sh` on the cluster (job scripts are fine to keep there):
+The repo carries the job file. From inside the repo on the login node:
 ```
-#!/bin/bash
-#SBATCH --time=00:40:00
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=1G
-#SBATCH --output=sweep-%j.out
-cd ~/isc-02
-module load gcc
-hostname; taskset -cp $$
-scripts/sweep.sh flags demo1
-scripts/sweep.sh copies demo1
-scripts/score.sh demo2 30 1
-scripts/score.sh demo3 30 1
+sbatch scripts/frnt201-sweep.job      # 16 CPUs on frnt201, about 35 minutes
+squeue -u $USER                        # is it still running?
+cat sweep-<jobid>.out                  # same text as benchmarks/sweep-frnt201-<time>.txt
 ```
-Submit: `sbatch ~/sweep.sh`. Watch: `squeue -u $USER`. Read: `cat sweep-<jobid>.out`.
+It runs `scripts/sweep.sh all`: a validity check on demo1-3, the
+hyperthread test (`ht`) on demo1 and demo3, and the compiler-flag test
+(`flags`). Other parts: `sbatch scripts/frnt201-sweep.job copies` or `cc`.
 
-Reading the results:
-- `flags`: keep the best `OPT` only if it wins by more than the run-to-run
-  spread on 2-3 repeats. To adopt it, change the `OPT ?=` line in
-  `doom/Makefile` on the laptop, commit, push, pull.
-- `copies`: run.sh fills one CPU per physical core first, then the second
-  hyperthread of each core. If your 16 CPUs are 8 cores x 2 threads,
-  COPIES=8 vs COPIES=16 tells you whether hyperthreads add throughput; that
-  maps to 64 vs 128 copies on the full node. The default uses every CPU
-  (128 at scoring). If 64 wins clearly, set `COPIES=${COPIES:-64}` style
-  default in run.sh only after confirming with repeats.
-- Shared node: other teams' jobs add noise. Repeat anything that looks
-  like a win; prefer runs at quiet times.
+Reading the results (each block ends with a summary, best setting first):
+- `valid`: every line must say `0 invalid`; matched is 7115 (or 7116) /
+  7088 / 6041.
+- `ht`: compares one copy per core, two copies per core, and two copies
+  sharing one frame buffer, by `demos/s` (average demo time per copy, from
+  the logs; steadier than the count). A 16-CPU job is 8 cores x 2 threads,
+  and the cache the copies fight over is per core, so the winner here is
+  the setting for the full node: `SMT=1` means 64 copies, `SMT=2` means 128.
+  To adopt it, change the `SMT=${SMT:-2}` / `FBSHARE=${FBSHARE:-0}` lines
+  in `scripts/run.sh` on the laptop. Ask an organizer before turning
+  `FBSHARE` on (see TEAM-NOTES.md).
+- `flags`: change `OPT` in `doom/Makefile` only for a clear win.
+- A setting wins only if its worst run beats the other's best, or it wins
+  every round. Other teams' jobs add noise; prefer quiet times.
+
+### Without pushing (testing local commits)
+
+To try commits that are not on GitHub yet, copy the working tree from the
+laptop into a separate folder on the cluster, so the clone in `~/isc-02`
+stays as it is:
+```
+# on the laptop
+rsync -av --exclude .git --exclude results --exclude 'doom/build' \
+      --exclude doom/doomgeneric --exclude '*.wad' \
+      /Volumes/Disk/QHPC/DOOMATHON/isc-02/ \
+      <frontenac-username>@login.cac.queensu.ca:isc-02-r3/
+
+# on the cluster login node
+cp ~/isc-02/freedoom1.wad ~/isc-02-r3/
+cd ~/isc-02-r3 && sbatch scripts/frnt201-sweep.job
+
+# afterwards, on the laptop: fetch the result file
+scp '<frontenac-username>@login.cac.queensu.ca:isc-02-r3/benchmarks/sweep-*.txt' \
+    /Volumes/Disk/QHPC/DOOMATHON/isc-02/benchmarks/
+```
 
 ## 6. Before November 16
 
@@ -109,5 +125,5 @@ Reading the results:
    git tag final && git push origin final
    ```
 3. Organizers build with plain `make -C doom` and run `scripts/score.sh`,
-   so the submitted defaults (Makefile `OPT`, run.sh `MODE`/`COPIES`) are
+   so the submitted defaults (Makefile `OPT`, run.sh `MODE`/`SMT`/`FBSHARE`) are
    what gets scored.
