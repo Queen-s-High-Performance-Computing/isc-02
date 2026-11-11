@@ -340,40 +340,71 @@ short*		mceilingclip;
 fixed_t		spryscale;
 fixed_t		sprtopscreen;
 
+//
+// DOOMATHON: same computation as the original, post by post. What the
+// loop only reads (the clip limits for this column, the scale, the
+// colormap) is fetched once instead of once per post, and when the column
+// function in use is R_DrawColumn its body is called inline. The dc_*
+// globals end up with the same values as before.
+//
 void R_DrawMaskedColumn (column_t* column)
 {
     int		topscreen;
     int 	bottomscreen;
+    int		yl;
+    int		yh;
     fixed_t	basetexturemid;
+    fixed_t	texturemid;
+
+    const int		x = dc_x;
+    const int		floorclipx = mfloorclip[x];
+    const int		ceilingclipx = mceilingclip[x];
+    const fixed_t	scale = spryscale;
+    const fixed_t	topscr = sprtopscreen;
+    const fixed_t	iscale = dc_iscale;
+    lighttable_t*const	colormap = dc_colormap;
+    const boolean	fastcol = (colfunc == R_DrawColumn);
 	
     basetexturemid = dc_texturemid;
 	
     for ( ; column->topdelta != 0xff ; ) 
     {
+	const int	topdelta = column->topdelta;
+	const int	length = column->length;
+
 	// calculate unclipped screen coordinates
 	//  for post
-	topscreen = sprtopscreen + spryscale*column->topdelta;
-	bottomscreen = topscreen + spryscale*column->length;
+	topscreen = topscr + scale*topdelta;
+	bottomscreen = topscreen + scale*length;
 
-	dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-	dc_yh = (bottomscreen-1)>>FRACBITS;
+	yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+	yh = (bottomscreen-1)>>FRACBITS;
 		
-	if (dc_yh >= mfloorclip[dc_x])
-	    dc_yh = mfloorclip[dc_x]-1;
-	if (dc_yl <= mceilingclip[dc_x])
-	    dc_yl = mceilingclip[dc_x]+1;
+	if (yh >= floorclipx)
+	    yh = floorclipx-1;
+	if (yl <= ceilingclipx)
+	    yl = ceilingclipx+1;
 
-	if (dc_yl <= dc_yh)
+	dc_yl = yl;
+	dc_yh = yh;
+
+	if (yl <= yh)
 	{
-	    dc_source = (byte *)column + 3;
-	    dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
+	    byte *source = (byte *)column + 3;
+
+	    dc_source = source;
+	    dc_texturemid = texturemid = basetexturemid - (topdelta<<FRACBITS);
 	    // dc_source = (byte *)column + 3 - column->topdelta;
 
 	    // Drawn by either R_DrawColumn
 	    //  or (SHADOW) R_DrawFuzzColumn.
-	    colfunc ();	
+	    if (fastcol)
+		R_DrawColumnInline (x, yl, yh, iscale, texturemid,
+		                    source, colormap);
+	    else
+		colfunc ();	
 	}
-	column = (column_t *)(  (byte *)column + column->length + 4);
+	column = (column_t *)(  (byte *)column + length + 4);
     }
 	
     dc_texturemid = basetexturemid;

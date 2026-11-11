@@ -2276,12 +2276,20 @@ boolean G_CheckDemoStatus (void)
 
         if (demo_loop)
         {
+            printf ("timed %i gametics in %i realtics (%f fps) %.4f s\n",
+                    gametic, realtics, fps, D_DemoSeconds ());
             demo_finished = true;
             return true;
         }
 
-	I_Error ("timed %i gametics in %i realtics (%f fps)",
-                 gametic, realtics, fps);
+        // DOOMATHON: the original ended a timedemo through I_Error(),
+        // which, with output going to a file, also started a shell to
+        // look for a dialog-box program (system("zenity ...")): two extra
+        // processes per demo. End the process directly instead. exit()
+        // still runs the validator's report, exactly as before.
+        printf ("timed %i gametics in %i realtics (%f fps) %.4f s\n",
+                gametic, realtics, fps, D_DemoSeconds ());
+        exit (0);
     } 
 	 
     if (demoplayback) 

@@ -46,5 +46,9 @@ void D_StartTitle (void);
 extern  gameaction_t    gameaction;
 
 
+// DOOMATHON: wall-clock time of the demo in progress (d_main.c).
+void D_MarkDemoStart(void);
+double D_DemoSeconds(void);
+
 #endif
 

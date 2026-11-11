@@ -38,6 +38,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "doomkeys.h"
 
 #include "doomgeneric.h"
+#include "d_workers.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -340,6 +341,11 @@ static void I_FinishUpdateFast (void)
         pal32_dirty = false;
     }
 
+    // Only does anything when this worker shares its frame buffer with
+    // its hyperthread sibling (-sharefb): the frame is written and
+    // fingerprinted as one step.
+    D_FrameLock();
+
     const uint8_t *restrict in = I_VideoBuffer;
     uint32_t *restrict out = (uint32_t *) DG_ScreenBuffer;
     int y, x;
@@ -358,6 +364,8 @@ static void I_FinishUpdateFast (void)
     }
 
     DG_DrawFrame();
+
+    D_FrameUnlock();
 }
 
 void I_FinishUpdate (void)
@@ -382,6 +390,8 @@ void I_FinishUpdate (void)
     x_offset     = (((s_Fb.xres - (SCREENWIDTH  * fb_scaling)) * s_Fb.bits_per_pixel/8)) / 2; // XXX: siglent FB hack: /4 instead of /2, since it seems to handle the resolution in a funny way
     //x_offset     = 0;
     x_offset_end = ((s_Fb.xres - (SCREENWIDTH  * fb_scaling)) * s_Fb.bits_per_pixel/8) - x_offset;
+
+    D_FrameLock();
 
     /* DRAW SCREEN */
     line_in  = (unsigned char *) I_VideoBuffer;
@@ -417,6 +427,8 @@ void I_FinishUpdate (void)
     }
 
 	DG_DrawFrame();
+
+    D_FrameUnlock();
 }
 
 //

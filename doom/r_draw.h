@@ -20,6 +20,12 @@
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#include "doomdef.h"
+#include "i_system.h"
+#include "i_video.h"
+#include "m_fixed.h"
+#include "r_defs.h"
+
 
 
 
@@ -38,6 +44,107 @@ extern byte*		dc_source;
 // Hook in assembler or system specific BLT
 //  here.
 void 	R_DrawColumn (void);
+
+// DOOMATHON: the body of R_DrawColumn, as an inline function taking the
+// column as arguments instead of through the dc_* globals. R_DrawColumn()
+// itself is now a call of this with the globals. The wall and sprite loops
+// (r_segs.c, r_things.c) call it directly when the column function in use
+// is R_DrawColumn, which saves an indirect call and a round trip through
+// memory for every column. Same checks, same arithmetic, same pixels.
+extern byte*		ylookup[];
+extern int		columnofs[];
+extern int		centery;
+
+static inline void
+R_DrawColumnInline
+( int			x,
+  int			yl,
+  int			yh,
+  fixed_t		iscale,
+  fixed_t		texturemid,
+  const byte*		src,
+  const lighttable_t*	cmap )
+{
+    int			count;
+    byte*		dest;
+    fixed_t		frac;
+    fixed_t		fracstep;
+
+    count = yh - yl;
+
+    // Zero length, column does not exceed a pixel.
+    if (count < 0)
+	return;
+
+#ifdef RANGECHECK
+    if ((unsigned)x >= SCREENWIDTH
+	|| yl < 0
+	|| yh >= SCREENHEIGHT)
+	I_Error ("R_DrawColumn: %i to %i at %i", yl, yh, x);
+#endif
+
+    // Framebuffer destination address.
+    // Use ylookup LUT to avoid multiply with ScreenWidth.
+    // Use columnofs LUT for subwindows?
+    dest = ylookup[yl] + columnofs[x];
+
+    // Determine scaling,
+    //  which is the only mapping to be done.
+    fracstep = iscale;
+    frac = texturemid + (yl-centery)*fracstep;
+
+    // Inner loop that does the actual texture mapping,
+    //  e.g. a DDA-lile scaling.
+    //
+    // Same pixels as the original loop
+    //     *dest = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
+    // written so the CPU has less to do per pixel:
+    //  - locals with restrict: a store through dest (a byte pointer may
+    //    alias anything) otherwise forces the colormap and source
+    //    pointers to be reloaded from memory on every pixel;
+    //  - frac is kept shifted left by 9, so the texture row
+    //    (frac>>16)&127 is the top 7 bits: one shift instead of a shift
+    //    and a mask (bits above bit 22 never reach the result anyway);
+    //  - four pixels per pass, each from its own multiple of the step, so
+    //    the four lookups do not wait on one another.
+    {
+	const lighttable_t *restrict colormap = cmap;
+	const byte *restrict source = src;
+	byte *restrict d = dest;
+	unsigned int f = (unsigned int) frac << 9;
+	const unsigned int s1 = (unsigned int) fracstep << 9;
+	const unsigned int s2 = s1 + s1;
+	const unsigned int s3 = s2 + s1;
+	const unsigned int s4 = s2 + s2;
+	int n = count + 1;
+
+	while (n >= 4)
+	{
+	    const byte p0 = colormap[source[f >> 25]];
+	    const byte p1 = colormap[source[(f + s1) >> 25]];
+	    const byte p2 = colormap[source[(f + s2) >> 25]];
+	    const byte p3 = colormap[source[(f + s3) >> 25]];
+
+	    d[0] = p0;
+	    d[SCREENWIDTH] = p1;
+	    d[SCREENWIDTH * 2] = p2;
+	    d[SCREENWIDTH * 3] = p3;
+
+	    d += SCREENWIDTH * 4;
+	    f += s4;
+	    n -= 4;
+	}
+
+	while (n > 0)
+	{
+	    *d = colormap[source[f >> 25]];
+	    d += SCREENWIDTH;
+	    f += s1;
+	    n--;
+	}
+    }
+}
+
 void 	R_DrawColumnLow (void);
 
 // The Spectre/Invisibility effect.

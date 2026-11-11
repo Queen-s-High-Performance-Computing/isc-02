@@ -196,6 +196,19 @@ R_RenderMaskedSegRange
 #define HEIGHTBITS		12
 #define HEIGHTUNIT		(1<<HEIGHTBITS)
 
+//
+// DOOMATHON: the same loop as the original, statement for statement, with
+// two changes that do not alter what it computes:
+//  - everything the loop reads on every column (the clip arrays' current
+//    values, the stepping variables, the texture numbers, ...) is held in
+//    local variables. They were globals, and each byte store into a
+//    visplane or the screen made the compiler read all of them back from
+//    memory. The stepping variables are written back when the loop ends.
+//  - when the column function in use is R_DrawColumn (always, at this
+//    detail level) its body is called inline with the column's values;
+//    any other column function is called exactly as before. The dc_*
+//    globals are still set, so later code sees the values it always did.
+//
 void R_RenderSegLoop (void)
 {
     angle_t		angle;
@@ -207,64 +220,109 @@ void R_RenderSegLoop (void)
     int			top;
     int			bottom;
 
-    for ( ; rw_x < rw_stopx ; rw_x++)
+    int			x = rw_x;
+    const int		stopx = rw_stopx;
+    fixed_t		scale = rw_scale;
+    const fixed_t	scalestep = rw_scalestep;
+    fixed_t		tfrac = topfrac;
+    const fixed_t	tstep = topstep;
+    fixed_t		bfrac = bottomfrac;
+    const fixed_t	bstep = bottomstep;
+    fixed_t		phigh = pixhigh;
+    const fixed_t	phighstep = pixhighstep;
+    fixed_t		plow = pixlow;
+    const fixed_t	plowstep = pixlowstep;
+
+    const boolean	l_markceiling = markceiling;
+    const boolean	l_markfloor = markfloor;
+    const boolean	l_segtextured = segtextured;
+    const boolean	l_maskedtexture = maskedtexture;
+    const int		l_midtexture = midtexture;
+    const int		l_toptexture = toptexture;
+    const int		l_bottomtexture = bottomtexture;
+    const fixed_t	midtexturemid = rw_midtexturemid;
+    const fixed_t	toptexturemid = rw_toptexturemid;
+    const fixed_t	bottomtexturemid = rw_bottomtexturemid;
+    const angle_t	centerangle = rw_centerangle;
+    const fixed_t	offset = rw_offset;
+    const fixed_t	distance = rw_distance;
+    lighttable_t**const	lights = walllights;
+    visplane_t*const	cplane = ceilingplane;
+    visplane_t*const	fplane = floorplane;
+    short*const		cclip = ceilingclip;
+    short*const		fclip = floorclip;
+    short*const		maskedcol = maskedtexturecol;
+    const int		l_viewheight = viewheight;
+    const boolean	fastcol = (colfunc == R_DrawColumn);
+
+    lighttable_t*	colormap = dc_colormap;
+    fixed_t		iscale = dc_iscale;
+    byte*		source;
+
+    for ( ; x < stopx ; x++)
     {
+	// The clip values for this column. They are only changed by this
+	// loop, below, and cc follows every change (through the same
+	// conversion to short that storing it in the array applies).
+	int cc = cclip[x];
+	int fc = fclip[x];
+
 	// mark floor / ceiling areas
-	yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
+	yl = (tfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
 
 	// no space above wall?
-	if (yl < ceilingclip[rw_x]+1)
-	    yl = ceilingclip[rw_x]+1;
+	if (yl < cc+1)
+	    yl = cc+1;
 	
-	if (markceiling)
+	if (l_markceiling)
 	{
-	    top = ceilingclip[rw_x]+1;
+	    top = cc+1;
 	    bottom = yl-1;
 
-	    if (bottom >= floorclip[rw_x])
-		bottom = floorclip[rw_x]-1;
+	    if (bottom >= fc)
+		bottom = fc-1;
 
 	    if (top <= bottom)
 	    {
-		ceilingplane->top[rw_x] = top;
-		ceilingplane->bottom[rw_x] = bottom;
+		cplane->top[x] = top;
+		cplane->bottom[x] = bottom;
 	    }
 	}
 		
-	yh = bottomfrac>>HEIGHTBITS;
+	yh = bfrac>>HEIGHTBITS;
 
-	if (yh >= floorclip[rw_x])
-	    yh = floorclip[rw_x]-1;
+	if (yh >= fc)
+	    yh = fc-1;
 
-	if (markfloor)
+	if (l_markfloor)
 	{
 	    top = yh+1;
-	    bottom = floorclip[rw_x]-1;
-	    if (top <= ceilingclip[rw_x])
-		top = ceilingclip[rw_x]+1;
+	    bottom = fc-1;
+	    if (top <= cc)
+		top = cc+1;
 	    if (top <= bottom)
 	    {
-		floorplane->top[rw_x] = top;
-		floorplane->bottom[rw_x] = bottom;
+		fplane->top[x] = top;
+		fplane->bottom[x] = bottom;
 	    }
 	}
 	
 	// texturecolumn and lighting are independent of wall tiers
-	if (segtextured)
+	if (l_segtextured)
 	{
 	    // calculate texture offset
-	    angle = (rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT;
-	    texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+	    angle = (centerangle + xtoviewangle[x])>>ANGLETOFINESHIFT;
+	    texturecolumn = offset-FixedMul(finetangent[angle],distance);
 	    texturecolumn >>= FRACBITS;
 	    // calculate lighting
-	    index = rw_scale>>LIGHTSCALESHIFT;
+	    index = scale>>LIGHTSCALESHIFT;
 
 	    if (index >=  MAXLIGHTSCALE )
 		index = MAXLIGHTSCALE-1;
 
-	    dc_colormap = walllights[index];
-	    dc_x = rw_x;
-	    dc_iscale = 0xffffffffu / (unsigned)rw_scale;
+	    dc_colormap = colormap = lights[index];
+	    dc_x = x;
+	    dc_iscale = iscale = 0xffffffffu / (unsigned)scale;
 	}
         else
         {
@@ -274,92 +332,110 @@ void R_RenderSegLoop (void)
         }
 	
 	// draw the wall tiers
-	if (midtexture)
+	if (l_midtexture)
 	{
 	    // single sided line
 	    dc_yl = yl;
 	    dc_yh = yh;
-	    dc_texturemid = rw_midtexturemid;
-	    dc_source = R_GetColumn(midtexture,texturecolumn);
-	    colfunc ();
-	    ceilingclip[rw_x] = viewheight;
-	    floorclip[rw_x] = -1;
+	    dc_texturemid = midtexturemid;
+	    dc_source = source = R_GetColumn(l_midtexture,texturecolumn);
+	    if (fastcol)
+		R_DrawColumnInline (dc_x, yl, yh, iscale, midtexturemid,
+		                    source, colormap);
+	    else
+		colfunc ();
+	    cclip[x] = l_viewheight;
+	    fclip[x] = -1;
 	}
 	else
 	{
 	    // two sided line
-	    if (toptexture)
+	    if (l_toptexture)
 	    {
 		// top wall
-		mid = pixhigh>>HEIGHTBITS;
-		pixhigh += pixhighstep;
+		mid = phigh>>HEIGHTBITS;
+		phigh += phighstep;
 
-		if (mid >= floorclip[rw_x])
-		    mid = floorclip[rw_x]-1;
+		if (mid >= fc)
+		    mid = fc-1;
 
 		if (mid >= yl)
 		{
 		    dc_yl = yl;
 		    dc_yh = mid;
-		    dc_texturemid = rw_toptexturemid;
-		    dc_source = R_GetColumn(toptexture,texturecolumn);
-		    colfunc ();
-		    ceilingclip[rw_x] = mid;
+		    dc_texturemid = toptexturemid;
+		    dc_source = source = R_GetColumn(l_toptexture,texturecolumn);
+		    if (fastcol)
+			R_DrawColumnInline (dc_x, yl, mid, iscale, toptexturemid,
+			                    source, colormap);
+		    else
+			colfunc ();
+		    cclip[x] = cc = (short) mid;
 		}
 		else
-		    ceilingclip[rw_x] = yl-1;
+		    cclip[x] = cc = (short) (yl-1);
 	    }
 	    else
 	    {
 		// no top wall
-		if (markceiling)
-		    ceilingclip[rw_x] = yl-1;
+		if (l_markceiling)
+		    cclip[x] = cc = (short) (yl-1);
 	    }
 			
-	    if (bottomtexture)
+	    if (l_bottomtexture)
 	    {
 		// bottom wall
-		mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
-		pixlow += pixlowstep;
+		mid = (plow+HEIGHTUNIT-1)>>HEIGHTBITS;
+		plow += plowstep;
 
 		// no space above wall?
-		if (mid <= ceilingclip[rw_x])
-		    mid = ceilingclip[rw_x]+1;
+		if (mid <= cc)
+		    mid = cc+1;
 		
 		if (mid <= yh)
 		{
 		    dc_yl = mid;
 		    dc_yh = yh;
-		    dc_texturemid = rw_bottomtexturemid;
-		    dc_source = R_GetColumn(bottomtexture,
-					    texturecolumn);
-		    colfunc ();
-		    floorclip[rw_x] = mid;
+		    dc_texturemid = bottomtexturemid;
+		    dc_source = source = R_GetColumn(l_bottomtexture,
+						     texturecolumn);
+		    if (fastcol)
+			R_DrawColumnInline (dc_x, mid, yh, iscale, bottomtexturemid,
+			                    source, colormap);
+		    else
+			colfunc ();
+		    fclip[x] = mid;
 		}
 		else
-		    floorclip[rw_x] = yh+1;
+		    fclip[x] = yh+1;
 	    }
 	    else
 	    {
 		// no bottom wall
-		if (markfloor)
-		    floorclip[rw_x] = yh+1;
+		if (l_markfloor)
+		    fclip[x] = yh+1;
 	    }
 			
-	    if (maskedtexture)
+	    if (l_maskedtexture)
 	    {
 		// save texturecol
 		//  for backdrawing of masked mid texture
-		maskedtexturecol[rw_x] = texturecolumn;
+		maskedcol[x] = texturecolumn;
 	    }
 	}
 		
-	rw_scale += rw_scalestep;
-	topfrac += topstep;
-	bottomfrac += bottomstep;
+	scale += scalestep;
+	tfrac += tstep;
+	bfrac += bstep;
     }
-}
 
+    rw_x = x;
+    rw_scale = scale;
+    topfrac = tfrac;
+    bottomfrac = bfrac;
+    pixhigh = phigh;
+    pixlow = plow;
+}
 
 
 

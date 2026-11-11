@@ -29,6 +29,7 @@
 #include <sys/prctl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
 
 #include "config.h"
@@ -79,6 +80,7 @@
 #include "statdump.h"
 
 #include "d_main.h"
+#include "d_workers.h"
 
 //
 // D-DoomLoop()
@@ -89,14 +91,46 @@
 //  calls all ?_Responder, ?_Ticker, and ?_Drawer,
 //  calls I_GetTime, I_StartFrame, and I_StartTic
 //
+// Wall-clock time of the demo in progress, for the "timed ..." line each
+// demo prints (tuning runs read it to compare settings more precisely than
+// by counting finished demos). Started when the demo's process is forked
+// or, with -demoloop, when the demo is restarted.
+static struct timespec demo_clock;
+
+void D_MarkDemoStart(void)
+{
+    clock_gettime(CLOCK_MONOTONIC, &demo_clock);
+}
+
+double D_DemoSeconds(void)
+{
+    struct timespec now;
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (now.tv_sec - demo_clock.tv_sec)
+         + (now.tv_nsec - demo_clock.tv_nsec) * 1e-9;
+}
+
 static void D_ForkDemos(void)
 {
+    int reps = -1;
+    int p;
+
+    // -demoreps <n>: stop after n demos (for benchmarking; the default is
+    // to keep going until the scorer stops us).
+    p = M_CheckParmWithArgs("-demoreps", 1);
+    if (p > 0)
+        reps = atoi(myargv[p + 1]);
+
     fflush(stdout);
     fflush(stderr);
 
-    for (;;)
+    for (; reps != 0; reps -= (reps > 0))
     {
-        pid_t pid = fork();
+        pid_t pid;
+
+        D_MarkDemoStart();
+        pid = fork();
 
         if (pid == 0)
         {
@@ -112,6 +146,8 @@ static void D_ForkDemos(void)
         while (waitpid(pid, NULL, 0) < 0 && errno == EINTR)
             ;
     }
+
+    exit(0);
 }
 
 void D_DoomLoop (void);
@@ -445,6 +481,7 @@ extern int fuzzpos;
 
 static void D_RestartTimeDemo (void)
 {
+    D_MarkDemoStart ();
     demo_finished = false;
     D_ResetTics ();
 
@@ -505,12 +542,18 @@ void D_DoomLoop (void)
 
     main_loop_started = true;
 
+    D_MarkDemoStart();
+
     // DOOMATHON: with -demofork, this process has finished loading the game
     // data and stops here, just before the demo starts. It then forks one
     // child per demo: each child begins from an untouched copy of this
     // state (no demo has run in it yet), plays the demo in full and exits;
     // the parent waits and forks the next. Children stay in this process
     // group, so the scorer still stops everything.
+    // With -workers, this process becomes one pinned worker per listed CPU
+    // first (d_workers.c); each worker then carries on from here.
+    D_StartWorkers();
+
     if (M_CheckParm("-demofork") > 0)
     {
         D_ForkDemos();

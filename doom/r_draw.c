@@ -22,6 +22,17 @@
 
 
 #include "doomdef.h"
+
+// DOOMATHON: R_DrawSpan has a vector version for CPUs with AVX-512VL/BW
+// and BMI2 (the scoring node has them; -march=native turns them on). Any
+// other CPU, or building with -DDOOM_NO_SIMD, gets the plain C loop, which
+// draws the same pixels. -DDOOM_SPAN_ZMM switches from 256-bit to 512-bit
+// vectors (for tuning runs).
+#if !defined(DOOM_NO_SIMD) && defined(__AVX512F__) && defined(__AVX512VL__) \
+ && defined(__AVX512BW__) && defined(__AVX2__) && defined(__BMI2__)
+#include <immintrin.h>
+#define DOOM_SPAN_SIMD 1
+#endif
 #include "deh_main.h"
 
 #include "i_system.h"
@@ -101,56 +112,8 @@ int			dccount;
 // 
 void R_DrawColumn (void) 
 { 
-    int			count; 
-    byte*		dest; 
-    fixed_t		frac;
-    fixed_t		fracstep;	 
- 
-    count = dc_yh - dc_yl; 
-
-    // Zero length, column does not exceed a pixel.
-    if (count < 0) 
-	return; 
-				 
-#ifdef RANGECHECK 
-    if ((unsigned)dc_x >= SCREENWIDTH
-	|| dc_yl < 0
-	|| dc_yh >= SCREENHEIGHT) 
-	I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
-#endif 
-
-    // Framebuffer destination address.
-    // Use ylookup LUT to avoid multiply with ScreenWidth.
-    // Use columnofs LUT for subwindows? 
-    dest = ylookup[dc_yl] + columnofs[dc_x];  
-
-    // Determine scaling,
-    //  which is the only mapping to be done.
-    fracstep = dc_iscale; 
-    frac = dc_texturemid + (dc_yl-centery)*fracstep; 
-
-    // Inner loop that does the actual texture mapping,
-    //  e.g. a DDA-lile scaling.
-    // This is as fast as it gets.
-    // Locals with restrict: a store through dest (a byte pointer may alias
-    // anything) otherwise forces dc_colormap and dc_source to be reloaded
-    // from memory on every pixel. Same arithmetic, same pixels.
-    {
-	const lighttable_t *restrict colormap = dc_colormap;
-	const byte *restrict source = dc_source;
-	byte *restrict d = dest;
-
-	do 
-	{
-	    // Re-map color indices from wall texture column
-	    //  using a lighting/special effects LUT.
-	    *d = colormap[source[(frac>>FRACBITS)&127]];
-	    
-	    d += SCREENWIDTH; 
-	    frac += fracstep;
-	    
-	} while (count--); 
-    }
+    R_DrawColumnInline (dc_x, dc_yl, dc_yh, dc_iscale, dc_texturemid,
+                        dc_source, dc_colormap);
 } 
 
 
@@ -601,8 +564,10 @@ void R_DrawSpan (void)
     unsigned int position, step;
     byte *dest;
     int count;
+#if !defined(DOOM_SPAN_SIMD)
     int spot;
     unsigned int xtemp, ytemp;
+#endif
 
 #ifdef RANGECHECK
     if (ds_x2 < ds_x1
@@ -631,6 +596,77 @@ void R_DrawSpan (void)
     // We do not check for zero spans here?
     count = ds_x2 - ds_x1;
 
+#if defined(DOOM_SPAN_SIMD)
+    // DOOMATHON: eight (or sixteen) pixels per pass. The positions of the
+    // next pixels are position + i*step, exactly the values the scalar
+    // loop reaches one at a time, so every texture index and every pixel
+    // is the same. The two table lookups are done with gather loads.
+    // A gather loads four bytes; the lookups read the word that ends at
+    // the wanted byte (base - 3) and keep its top byte, so nothing past
+    // the end of the flat or the colormap is ever touched. The bytes just
+    // before them are always readable: both live in zone blocks, which
+    // start with a header. The last pass is masked to the pixels left.
+    {
+	const byte *source = ds_source - 3;
+	const byte *colormap = ds_colormap - 3;
+	byte *d = dest;
+	int n = count + 1;
+#if defined(DOOM_SPAN_ZMM)
+	const __m512i vstep = _mm512_set1_epi32 ((int) step);
+	__m512i pos = _mm512_add_epi32 (_mm512_set1_epi32 ((int) position),
+	    _mm512_mullo_epi32 (vstep, _mm512_setr_epi32 (0, 1, 2, 3, 4, 5, 6, 7,
+	                                                  8, 9, 10, 11, 12, 13, 14, 15)));
+	const __m512i stepn = _mm512_slli_epi32 (vstep, 4);
+	const __m512i ymask = _mm512_set1_epi32 (0x0fc0);
+
+	for (;;)
+	{
+	    const __mmask16 k = (__mmask16) _bzhi_u32 (0xffff, n < 16 ? n : 16);
+	    const __m512i spot = _mm512_or_si512 (
+	        _mm512_and_si512 (_mm512_srli_epi32 (pos, 4), ymask),
+	        _mm512_srli_epi32 (pos, 26));
+	    const __m512i texel = _mm512_srli_epi32 (
+	        _mm512_mask_i32gather_epi32 (ymask, k, spot, source, 1), 24);
+	    const __m512i pixel = _mm512_srli_epi32 (
+	        _mm512_mask_i32gather_epi32 (ymask, k, texel, colormap, 1), 24);
+
+	    _mm512_mask_cvtepi32_storeu_epi8 (d, k, pixel);
+
+	    n -= 16;
+	    if (n <= 0)
+		break;
+	    d += 16;
+	    pos = _mm512_add_epi32 (pos, stepn);
+	}
+#else
+	const __m256i vstep = _mm256_set1_epi32 ((int) step);
+	__m256i pos = _mm256_add_epi32 (_mm256_set1_epi32 ((int) position),
+	    _mm256_mullo_epi32 (vstep, _mm256_setr_epi32 (0, 1, 2, 3, 4, 5, 6, 7)));
+	const __m256i stepn = _mm256_slli_epi32 (vstep, 3);
+	const __m256i ymask = _mm256_set1_epi32 (0x0fc0);
+
+	for (;;)
+	{
+	    const __mmask8 k = (__mmask8) _bzhi_u32 (0xff, n < 8 ? n : 8);
+	    const __m256i spot = _mm256_or_si256 (
+	        _mm256_and_si256 (_mm256_srli_epi32 (pos, 4), ymask),
+	        _mm256_srli_epi32 (pos, 26));
+	    const __m256i texel = _mm256_srli_epi32 (
+	        _mm256_mmask_i32gather_epi32 (ymask, k, spot, source, 1), 24);
+	    const __m256i pixel = _mm256_srli_epi32 (
+	        _mm256_mmask_i32gather_epi32 (ymask, k, texel, colormap, 1), 24);
+
+	    _mm256_mask_cvtepi32_storeu_epi8 (d, k, pixel);
+
+	    n -= 8;
+	    if (n <= 0)
+		break;
+	    d += 8;
+	    pos = _mm256_add_epi32 (pos, stepn);
+	}
+#endif
+    }
+#else
     // Locals with restrict, as in R_DrawColumn: keeps ds_colormap and
     // ds_source in registers instead of reloading them for every pixel.
     {
@@ -653,6 +689,7 @@ void R_DrawSpan (void)
 
 	} while (count--);
     }
+#endif
 }
 
 
