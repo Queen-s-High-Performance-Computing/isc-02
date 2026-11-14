@@ -73,6 +73,7 @@
 #include "statdump.h"
 
 #include "d_main.h"
+#include "d_loop.h"  // singletics
 
 //
 // D-DoomLoop()
@@ -312,14 +313,29 @@ void D_Display (void)
 
     do
     {
-	do
+	if (singletics)
 	{
-	    nowtime = I_GetTime ();
-	    tics = nowtime - wipestart;
-            I_Sleep(1);
-	} while (tics <= 0);
-        
-	wipestart = nowtime;
+	    // DOOMATHON: in -timedemo playback the game itself runs one tic per
+	    // loop instead of following the wall clock, so do the same for the
+	    // melt: advance exactly one melt step per drawn frame, without
+	    // sleeping. Every melt step is still drawn at full resolution (the
+	    // original skips steps whenever more than one real tic has passed).
+	    // wipe_initMelt's M_Random calls are untouched, so the random
+	    // sequence (and the status-bar face that also uses M_Random) is
+	    // unchanged.
+	    tics = 1;
+	}
+	else
+	{
+	    do
+	    {
+		nowtime = I_GetTime ();
+		tics = nowtime - wipestart;
+		I_Sleep(1);
+	    } while (tics <= 0);
+
+	    wipestart = nowtime;
+	}
 	done = wipe_ScreenWipe(wipe_Melt
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
 	I_UpdateNoBlit ();
