@@ -202,6 +202,55 @@ void cmap_to_fb(uint8_t *out, uint8_t *in, int in_pixels)
     }
 }
 
+// DOOMATHON: palette index -> final 32-bit framebuffer pixel, rebuilt
+// whenever the palette changes. Produces exactly the value cmap_to_fb
+// computes for bits_per_pixel == 32 (alpha byte stays 0).
+static uint32_t pal32[256];
+static boolean pal32_dirty = true;
+
+static void BuildPal32(void)
+{
+    int i;
+
+    for (i = 0; i < 256; ++i)
+    {
+        pal32[i] = ((uint32_t)colors[i].r << s_Fb.red.offset) |
+                   ((uint32_t)colors[i].g << s_Fb.green.offset) |
+                   ((uint32_t)colors[i].b << s_Fb.blue.offset);
+    }
+    pal32_dirty = false;
+}
+
+// DOOMATHON fast path: 32 bpp, 2x scaling, framebuffer exactly 640x400 (no
+// borders). Each source pixel is looked up once and stored as one 64-bit
+// write (both horizontal copies); each finished output row is then copied to
+// the row below. Output is bit-identical to the generic loop.
+static void FinishUpdate32x2(void)
+{
+    const byte *in = I_VideoBuffer;
+    uint32_t *out = (uint32_t *) DG_ScreenBuffer;
+    const int out_w = SCREENWIDTH * 2;
+    int y, x;
+
+    if (pal32_dirty)
+        BuildPal32();
+
+    for (y = 0; y < SCREENHEIGHT; ++y)
+    {
+        uint64_t *row = (uint64_t *) out;
+
+        for (x = 0; x < SCREENWIDTH; ++x)
+        {
+            uint64_t p = pal32[in[x]];
+            row[x] = p | (p << 32);  // same value in both halves: endian-safe
+        }
+        memcpy(out + out_w, out, out_w * sizeof(uint32_t));
+
+        in += SCREENWIDTH;
+        out += 2 * out_w;
+    }
+}
+
 void I_InitGraphics (void)
 {
     int i, gfxmodeparm;
@@ -324,6 +373,16 @@ void I_FinishUpdate (void)
     int x_offset, y_offset, x_offset_end;
     unsigned char *line_in, *line_out;
 
+#ifndef SYS_BIG_ENDIAN
+    if (s_Fb.bits_per_pixel == 32 && fb_scaling == 2
+        && s_Fb.xres == SCREENWIDTH * 2 && s_Fb.yres == SCREENHEIGHT * 2)
+    {
+        FinishUpdate32x2();
+        DG_DrawFrame();
+        return;
+    }
+#endif
+
     /* Offsets in case FB is bigger than DOOM */
     /* 600 = s_Fb heigt, 200 screenheight */
     /* 600 = s_Fb heigt, 200 screenheight */
@@ -411,6 +470,8 @@ void I_SetPalette (byte* palette)
         colors[i].g = gammatable[usegamma][*palette++];
         colors[i].b = gammatable[usegamma][*palette++];
     }
+
+    pal32_dirty = true;  // DOOMATHON: rebuild pal32 before the next frame
 
 #ifdef CMAP256
 
