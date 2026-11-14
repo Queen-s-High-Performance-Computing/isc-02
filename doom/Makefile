@@ -3,8 +3,22 @@
 
 CC      = gcc
 CFLAGS  += -ggdb3 -Os -Wall -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE
-LDFLAGS += -Wl,--gc-sections
 LIBS    += -lm -lc
+
+# Apple's linker (macOS dev laptops) uses different flag names than GNU ld.
+# On Linux (the scoring node) this is identical to the original flags.
+ifeq ($(shell uname -s),Darwin)
+# On macOS "gcc" is really clang. Use Homebrew's real GCC (brew install gcc)
+# so local builds match the cluster's compiler. Override with make CC=...
+ifeq ($(origin CC),file)
+CC := $(firstword $(shell ls /opt/homebrew/bin/gcc-[0-9]* /usr/local/bin/gcc-[0-9]* 2>/dev/null | sort -t- -k2 -n -r) gcc)
+endif
+LDFLAGS += -Wl,-dead_strip
+MAPFLAG  = -Wl,-map,$(OUTPUT).map
+else
+LDFLAGS += -Wl,--gc-sections
+MAPFLAG  = -Wl,-Map,$(OUTPUT).map
+endif
 
 ifeq ($(V),1)
 	VB=
@@ -25,7 +39,7 @@ clean:
 
 $(OUTPUT): $(OBJS)
 	@echo [Linking $@]
-	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(OUTPUT) $(LIBS) -Wl,-Map,$(OUTPUT).map
+	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $(OUTPUT) $(LIBS) $(MAPFLAG)
 
 $(OBJS): | $(OBJDIR)
 
