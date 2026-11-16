@@ -23,6 +23,7 @@
 
 #include "r_defs.h"
 #include "r_state.h"
+#include "w_wad.h"
 
 
 // Retrieve column data for span blitting.
@@ -47,5 +48,38 @@ int R_FlatNumForName (char* name);
 // returns the texture number for the texture name.
 int R_TextureNumForName (char *name);
 int R_CheckTextureNumForName (char *name);
+
+// R_GetColumn with the texture's column tables supplied by the caller,
+// which fetches them once per wall segment instead of once per column.
+extern int*		texturewidthmask;
+extern short**		texturecolumnlump;
+extern unsigned short**	texturecolumnofs;
+extern byte**		texturecomposite;
+
+void R_GenerateComposite (int texnum);
+
+static inline byte*
+R_GetColumnFrom
+( int			tex,
+  int			mask,
+  const short*		collump,
+  const unsigned short*	colofs,
+  int			col )
+{
+    int		lump;
+    int		ofs;
+
+    col &= mask;
+    lump = collump[col];
+    ofs = colofs[col];
+
+    if (lump > 0)
+	return (byte *) W_CacheLumpNumCache (lump) + ofs;
+
+    if (!texturecomposite[tex])
+	R_GenerateComposite (tex);
+
+    return texturecomposite[tex] + ofs;
+}
 
 #endif

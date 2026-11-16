@@ -32,6 +32,14 @@
 #include "r_local.h"
 #include "r_sky.h"
 
+// DOOMATHON: with AVX-512BW/VL, R_DrawPlanes looks at 32 columns of a
+// plane at once and calls R_MakeSpans only where a span starts or ends.
+#if !defined(DOOM_NO_SIMD) && defined(__AVX512BW__) && defined(__AVX512VL__) \
+ && defined(__AVX2__) && defined(__BMI2__)
+#include <immintrin.h>
+#define DOOM_PLANE_SIMD 1
+#endif
+
 
 
 planefunction_t		floorfunc;
@@ -433,6 +441,51 @@ void R_DrawPlanes (void)
 		
 	stop = pl->maxx + 1;
 
+#if defined(DOOM_PLANE_SIMD)
+	// R_MakeSpans(x, t1, b1, t2, b2) does nothing when t1 == t2 and
+	// b1 == b2 (none of its four loops is entered), and nothing when
+	// both columns are empty (t1 == t2 == 0xff) unless a bottom is
+	// 0xff too. Most columns are one of the two, so those are found 32
+	// at a time and skipped; the other columns get the same calls, in
+	// the same order, as the plain loop below. R_MakeSpans does not
+	// write to top[] or bottom[], so looking ahead changes nothing.
+	// The loads are masked to the columns left: no byte outside
+	// [minx-1, maxx+1] is read.
+	{
+	    const byte*const top = pl->top;
+	    const byte*const bottom = pl->bottom;
+	    const __m256i ff = _mm256_set1_epi8 ((char) 0xff);
+
+	    for (x = pl->minx ; x <= stop ; x += 32)
+	    {
+		const int left = stop - x + 1;
+		const __mmask32 k = (__mmask32) _bzhi_u32 (0xffffffffu,
+							   left < 32 ? left : 32);
+		const __m256i t1 = _mm256_maskz_loadu_epi8 (k, top + x - 1);
+		const __m256i t2 = _mm256_maskz_loadu_epi8 (k, top + x);
+		const __m256i b1 = _mm256_maskz_loadu_epi8 (k, bottom + x - 1);
+		const __m256i b2 = _mm256_maskz_loadu_epi8 (k, bottom + x);
+		const __mmask32 same = _mm256_mask_cmpeq_epi8_mask (
+		    _mm256_cmpeq_epi8_mask (t1, t2), b1, b2);
+		const __mmask32 empty = _mm256_mask_cmpneq_epi8_mask (
+		    _mm256_mask_cmpneq_epi8_mask (
+			_mm256_mask_cmpeq_epi8_mask (
+			    _mm256_cmpeq_epi8_mask (t1, ff), t2, ff),
+			b1, ff),
+		    b2, ff);
+		unsigned int work = (unsigned int) k & ~(unsigned int) (same | empty);
+
+		while (work)
+		{
+		    const int xx = x + __builtin_ctz (work);
+
+		    work &= work - 1;
+		    R_MakeSpans (xx, top[xx-1], bottom[xx-1],
+				 top[xx], bottom[xx]);
+		}
+	    }
+	}
+#else
 	for (x=pl->minx ; x<= stop ; x++)
 	{
 	    R_MakeSpans(x,pl->top[x-1],
@@ -440,6 +493,7 @@ void R_DrawPlanes (void)
 			pl->top[x],
 			pl->bottom[x]);
 	}
+#endif
 	
         W_ReleaseLumpNum(lumpnum);
     }

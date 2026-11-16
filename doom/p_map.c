@@ -398,6 +398,13 @@ boolean PIT_CheckThing (mobj_t* thing)
 //  speciallines[]
 //  numspeciallines
 //
+// DOOMATHON: the subsector P_CheckPosition found, and the point it was
+// found for. P_TryMove links the thing at that same point right after a
+// successful check, so it does not have to walk the BSP tree again.
+static subsector_t*	checksubsec;
+static fixed_t		checkx;
+static fixed_t		checky;
+
 boolean
 P_CheckPosition
 ( mobj_t*	thing,
@@ -424,6 +431,9 @@ P_CheckPosition
     tmbbox[BOXLEFT] = x - tmthing->radius;
 
     newsubsec = R_PointInSubsector (x,y);
+    checksubsec = newsubsec;
+    checkx = x;
+    checky = y;
     ceilingline = NULL;
     
     // The base floor / ceiling is from the subsector
@@ -521,7 +531,10 @@ P_TryMove
     thing->x = x;
     thing->y = y;
 
-    P_SetThingPosition (thing);
+    if (checkx == x && checky == y)
+	P_SetThingPositionIn (thing, checksubsec);
+    else
+	P_SetThingPosition (thing);
     
     // if any special lines were hit, do the effect
     if (! (thing->flags&(MF_TELEPORT|MF_NOCLIP)) )

@@ -26,8 +26,9 @@
 // DOOMATHON: R_DrawSpan has a vector version for CPUs with AVX-512VL/BW
 // and BMI2 (the scoring node has them; -march=native turns them on). Any
 // other CPU, or building with -DDOOM_NO_SIMD, gets the plain C loop, which
+
 // draws the same pixels. -DDOOM_SPAN_ZMM switches from 256-bit to 512-bit
-// vectors (for tuning runs).
+// vectors (for tuning runs)
 #if !defined(DOOM_NO_SIMD) && defined(__AVX512F__) && defined(__AVX512VL__) \
  && defined(__AVX512BW__) && defined(__AVX2__) && defined(__BMI2__)
 #include <immintrin.h>

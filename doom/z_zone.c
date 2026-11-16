@@ -36,15 +36,6 @@
 #define MEM_ALIGN sizeof(void *)
 #define ZONEID	0x1d4a11
 
-typedef struct memblock_s
-{
-    int			size;	// including the header and possibly tiny fragments
-    void**		user;
-    int			tag;	// PU_FREE if this is free
-    int			id;	// should be ZONEID
-    struct memblock_s*	next;
-    struct memblock_s*	prev;
-} memblock_t;
 
 
 typedef struct

@@ -1,22 +1,5 @@
 # QHPC DOOMATHON build. Team-owned: change compiler flags freely.
-#
-# Default flags (make OPT="..." overrides all of them for experiments):
-#   -O3              optimize for speed (the kit shipped with -Os, for size)
-#   -march=native    use every instruction set of the CPU this is built on
-#                    (AVX-512 on frnt201). Build inside a job on frnt201:
-#                    the binary may crash with "Illegal instruction" on
-#                    older CPUs.
-#   -flto=auto       link-time optimization: optimize across all source
-#                    files at once (lets the hot drawing functions be
-#                    inlined into their callers).
-#   -fwrapv -fno-strict-aliasing
-#                    Doom's 1993 fixed-point code relies on integer overflow
-#                    wrapping around and on reading memory through pointers
-#                    of another type. These tell the optimizer not to assume
-#                    otherwise, so the frames cannot depend on how
-#                    aggressive this particular compiler version is.
-# Each optional flag is tried first and left out if this compiler does not
-# accept it, so "make" works with any gcc.
+
 
 CC      = gcc
 
@@ -39,7 +22,16 @@ ifndef OPT
   OPT = -O3 $(ARCH) $(LTO) -fwrapv -fno-strict-aliasing
 endif
 
-CFLAGS  += -ggdb3 $(OPT) -Wall -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE
+# Plain executable: no PIE, stack protector, CET or fortify (some gcc
+# builds turn these on by default). Each flag only if the compiler takes it.
+PLAIN := $(foreach f,-fno-stack-protector -fcf-protection=none -fno-stack-clash-protection,$(if $(filter ok,$(call probe,$(f))),$(f)))
+PLAIN += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
+ifeq ($(call probe,-fno-pie -no-pie),ok)
+  PLAIN   += -fno-pie
+  LDFLAGS += -no-pie
+endif
+
+CFLAGS  += -ggdb3 $(OPT) $(PLAIN) -Wall -DNORMALUNIX -DLINUX -DSNDSERV -D_DEFAULT_SOURCE
 LDFLAGS += -Wl,--gc-sections
 LIBS    += -lm -lc
 

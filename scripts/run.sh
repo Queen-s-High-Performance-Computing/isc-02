@@ -27,7 +27,7 @@
 #                cores are filled first, then their second threads.
 #   FBSHARE=0|1  1 = the two workers of a core take turns drawing into one
 #                shared frame buffer instead of two private ones, so the pair
-#                fits in the core's L2 cache (default 0; see d_workers.c)
+#                fits in the core's L2 cache (default 1; see d_workers.c)
 #   MODE=fork    load once, fork a fresh child per demo (default; frames are
 #                bit-identical to a fresh process)
 #        loop    load once, replay the demo inside the same process
@@ -37,7 +37,7 @@
 MODE=${MODE:-fork}
 PIN=${PIN:-1}
 SMT=${SMT:-2}
-FBSHARE=${FBSHARE:-0}
+FBSHARE=${FBSHARE:-1}
 
 # CPUs this job is allowed to use (respects the Slurm allocation).
 allowed=$(awk '/^Cpus_allowed_list/ { print $2 }' /proc/self/status)

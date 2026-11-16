@@ -54,6 +54,9 @@ typedef struct
 
     // user data
     int data;
+
+    // DOOMATHON: true while the digits on screen are those of oldnum
+    boolean	drawn;
     
 } st_number_t;
 

@@ -2,7 +2,32 @@
 
 Working notes behind the README. Newest results first.
 
-## 1. Current result (round 3, frnt201)
+## 1. Current result (round 4, frnt201, 2026-11-16)
+
+`scripts/score.sh <demo> 120 3` on 16 CPUs of frnt201 (CPUs 0-7 and 64-71),
+Slurm job 12478285. The three setups ran in turn for each demo, so they saw
+the same node conditions. The node was shared with other jobs (load average
+in brackets). All runs 0 invalid; matched 7115 / 7088 / 6041.
+
+| Demo | Round 3 code, SMT=2 | Round 4 code, SMT=2 | Round 4, SMT=2, FBSHARE=1 (submitted) |
+|---|---|---|---|
+| demo1 | 984, 1010, 1094 -> **1010** (194) | 1072, 1044, 1044 -> **1044** (35) | 1308, 1306, 1306 -> **1306** (237) |
+| demo2 | 1016, 1024, 1028 -> **1024** (244) | 1076, 1074, 1092 -> **1076** (245) | 1366, 1370, 1364 -> **1366** (244) |
+| demo3 | 1000, 1024, 1022 -> **1022** (243) | 1094, 1094, 1094 -> **1094** (17) | 1306, 1310, 1306 -> **1306** (16) |
+
+- Round 4 code alone: +3% / +5% / +7% over round 3 (demo3's round 4 runs
+  had a quieter node). Smaller than off-cluster (one copy per core, 16-22%):
+  with two copies per core the run is limited by the shared 2 MB L2.
+- Shared frame buffer: +25% / +27% / +19% over round 4 with private frame
+  buffers, and the runs agree within 0.5% even at load 244. One 1 MB frame
+  buffer per core instead of two keeps both copies inside the core's L2.
+- Earlier the same day (job 12477797): build with no modules loaded OK
+  (gcc 12.3.1), 0 invalid. Copies per core on demo1 + demo3, 30 s:
+  SMT=1 17.9 demos/s, SMT=2 19.0, SMT=2 + FBSHARE 23.1.
+- Raw output: `benchmarks/final-12478285.out`, `benchmarks/round4-12477797.out`,
+  `benchmarks/round4-frnt201-20261116-1434.txt`.
+
+### Round 3 result (2026-11-11)
 
 `scripts/score.sh <demo> 120 3` (the official command: three 2-minute runs,
 median) on 16 CPUs of frnt201 (8 physical cores x 2 hardware threads, CPUs
@@ -71,11 +96,35 @@ full-node run gives the real number.
 | 11 | A finished demo exits directly. The original went through `I_Error`, which started a shell to look for `zenity` once per demo. | `g_game.c` | 0.5% |
 | 12 | WAD read into memory once per process; no file reads during the timed run, and forked copies never share a file position. | `w_file_stdc.c` | robustness |
 | 13 | Launcher: one process per physical core loads the game, then forks one pinned worker per hardware thread, each with its own log. | `d_workers.[ch]`, `launcher.c`, `run.sh` | faster start |
-| 14 | Optional, off by default (`FBSHARE=1`): the two workers of a core take turns writing complete frames into one shared frame buffer. | `d_workers.c`, `i_video.c` | not yet measured on frnt201 |
+| 14 | Shared frame buffer (`FBSHARE=1`, on by default since 2026-11-16): the two workers of a core take turns writing complete frames into one shared frame buffer. | `d_workers.c`, `i_video.c` | +25% on frnt201 (see section 1) |
 | 15 | `-fwrapv -fno-strict-aliasing`: Doom relies on integer wrap-around and type punning; these keep any compiler version from assuming otherwise. | `Makefile` | none (safety) |
 
 Off-cluster, round 3 needs 7-10% fewer CPU cycles per demo than round 2
 (2-CPU Intel VM, median of 9 interleaved runs).
+
+### Round 4 (not yet measured on frnt201)
+| # | Change | Files | Effect (off-cluster, gcc 12, one copy) |
+|---|---|---|---|
+| 16 | Frame conversion written with AVX2 intrinsics: 8 source pixels per pass (one palette gather), both output rows stored straight from the registers, no row copy. The round 1 loop only became vector code when the compiler chose to: gcc 13 did, gcc 12 (the compiler on frnt201) did not. | `i_video.c` | 9-16% less time per demo |
+| 17 | Wall loop fetches each texture's column tables once per wall segment and returns a cached patch column without a function call. Zone state is unchanged (the skipped call only rewrote a tag with the value it already had). | `r_segs.c`, `r_data.h`, `w_wad.h`, `z_zone.[ch]` | 1.5% fewer instructions |
+| 18 | Status bar numbers are redrawn only when the number changed or the bar was refreshed (the original redrew all of them every frame with the same pixels). | `st_lib.[ch]` | about 1% |
+| 19 | Build as a plain executable: no PIE, stack protector, CET or fortify, where the compiler turns them on by default. Each flag is probed first. | `Makefile` | up to 3% fewer instructions |
+| 20 | Floor/ceiling setup: 32 plane columns compared at once (AVX-512); `R_MakeSpans` is called only where a span starts or ends. 85-88% of columns need no call. Same calls in the same order. | `r_plane.c` | about 5% |
+| 21 | A thing that moves is linked into the subsector its position check already found, instead of walking the BSP tree a second time for the same point. | `p_map.c`, `p_maputl.c`, `p_local.h` | 0.3% |
+
+Together, off-cluster with gcc 12.4: 0.93 -> 0.77 s (demo1), 0.91 -> 0.74 s
+(demo2), 0.99 -> 0.84 s (demo3) per demo for one copy on its own core,
+15-18% less than round 3. Checked like round 3: all 256,000 pixels of every
+frame equal to the stock engine on demo1-3 (except the 6 / 2 / 3 frames where
+stock itself varies), in fork mode, with workers, with the shared frame
+buffer, with gcc 12, gcc 13, clang 18, AVX2-only and no-SIMD builds.
+
+Cache simulation of one copy (demo1): with a 2 MB cache almost nothing is
+pushed out (about 150 lines per frame); with 1 MB, about 19,400 lines per
+frame (1.2 MB) go to L3 and back. So one copy per core, or two copies sharing
+a frame buffer, stay inside the core's L2; two copies with private frame
+buffers do not. `sbatch scripts/frnt201-round4.job` measures the three
+settings on frnt201 and then runs the official 120 s x 3 with the winner.
 
 ## 5. How changes are checked
 
@@ -110,3 +159,29 @@ Off-cluster, round 3 needs 7-10% fewer CPU cycles per demo than round 2
   share its 2 MB L2, so they push each other's data out to L3.
 - **Memory bandwidth:** fine while frame buffers stay in L2/L3.
 - **Memory capacity, I/O, start-up:** not limits (about 2 ms to start a demo).
+
+## 8. Open questions and next steps
+
+1. **One or two copies per core?** A cache model suggests two copies per core
+   slow each other by about a third, and the shared frame buffer may recover
+   10-15%. `sbatch scripts/frnt201-sweep.job` (16 CPUs, about 35 minutes)
+   compares one copy per core, two, and two sharing a frame buffer; then set
+   `SMT` / `FBSHARE` in `scripts/run.sh` to the winner.
+2. **Ask an organizer:** is loading the WAD once and forking a fresh child per
+   demo fine (our default)? Before turning on `FBSHARE`: may two copies take
+   turns writing complete frames into one frame buffer?
+3. **Full-node test:** ask the execs for a slot to measure 128 copies.
+
+## 9. run.sh settings (defaults are what gets scored)
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `SMT` | 2 | hardware threads used per core (2 = 128 copies on the full node, 1 = 64) |
+| `FBSHARE` | 1 | 1 = the two copies of a core share one frame buffer |
+| `COPIES` | all | cap on the number of copies |
+| `MODE` | fork | `fork`, `loop` (replay in one process) or `restart` (original kit) |
+| `PIN` | 1 | pin each copy to one CPU |
+
+## 10. AI tools
+
+See the "AI tools" section of `README.md`.

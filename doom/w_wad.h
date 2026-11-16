@@ -26,6 +26,7 @@
 #include "d_mode.h"
 
 #include "w_file.h"
+#include "z_zone.h"
 
 
 //
@@ -74,5 +75,23 @@ void    W_ReleaseLumpNum(int lump);
 void    W_ReleaseLumpName(char *name);
 
 void W_CheckCorrectIWAD(GameMission_t mission);
+
+// W_CacheLumpNum(lumpnum, PU_CACHE) for the wall loop: when the lump is
+// already loaded and already tagged PU_CACHE, the call would only write
+// the tag it has, so the pointer is returned directly. Every other case
+// goes through W_CacheLumpNum as before.
+static inline void *W_CacheLumpNumCache(int lumpnum)
+{
+    if ((unsigned) lumpnum < numlumps)
+    {
+        lumpinfo_t *lump = &lumpinfo[lumpnum];
+
+        if (lump->cache != NULL && lump->wad_file->mapped == NULL
+         && Z_TagOf(lump->cache) == PU_CACHE)
+            return lump->cache;
+    }
+
+    return W_CacheLumpNum(lumpnum, PU_CACHE);
+}
 
 #endif

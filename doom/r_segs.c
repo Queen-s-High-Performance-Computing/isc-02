@@ -255,6 +255,17 @@ void R_RenderSegLoop (void)
     const int		l_viewheight = viewheight;
     const boolean	fastcol = (colfunc == R_DrawColumn);
 
+    // Column tables of the three wall textures (fixed after start-up).
+    const int		midmask = texturewidthmask[l_midtexture];
+    const short*const	midlump = texturecolumnlump[l_midtexture];
+    const unsigned short*const midofs = texturecolumnofs[l_midtexture];
+    const int		topmask = texturewidthmask[l_toptexture];
+    const short*const	toplump = texturecolumnlump[l_toptexture];
+    const unsigned short*const topofs = texturecolumnofs[l_toptexture];
+    const int		botmask = texturewidthmask[l_bottomtexture];
+    const short*const	botlump = texturecolumnlump[l_bottomtexture];
+    const unsigned short*const botofs = texturecolumnofs[l_bottomtexture];
+
     lighttable_t*	colormap = dc_colormap;
     fixed_t		iscale = dc_iscale;
     byte*		source;
@@ -338,7 +349,9 @@ void R_RenderSegLoop (void)
 	    dc_yl = yl;
 	    dc_yh = yh;
 	    dc_texturemid = midtexturemid;
-	    dc_source = source = R_GetColumn(l_midtexture,texturecolumn);
+	    dc_source = source = R_GetColumnFrom(l_midtexture, midmask,
+						 midlump, midofs,
+						 texturecolumn);
 	    if (fastcol)
 		R_DrawColumnInline (dc_x, yl, yh, iscale, midtexturemid,
 		                    source, colormap);
@@ -364,7 +377,9 @@ void R_RenderSegLoop (void)
 		    dc_yl = yl;
 		    dc_yh = mid;
 		    dc_texturemid = toptexturemid;
-		    dc_source = source = R_GetColumn(l_toptexture,texturecolumn);
+		    dc_source = source = R_GetColumnFrom(l_toptexture, topmask,
+							 toplump, topofs,
+							 texturecolumn);
 		    if (fastcol)
 			R_DrawColumnInline (dc_x, yl, mid, iscale, toptexturemid,
 			                    source, colormap);
@@ -397,8 +412,9 @@ void R_RenderSegLoop (void)
 		    dc_yl = mid;
 		    dc_yh = yh;
 		    dc_texturemid = bottomtexturemid;
-		    dc_source = source = R_GetColumn(l_bottomtexture,
-						     texturecolumn);
+		    dc_source = source = R_GetColumnFrom(l_bottomtexture, botmask,
+							 botlump, botofs,
+							 texturecolumn);
 		    if (fastcol)
 			R_DrawColumnInline (dc_x, mid, yh, iscale, bottomtexturemid,
 			                    source, colormap);

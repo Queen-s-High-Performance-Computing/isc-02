@@ -390,7 +390,16 @@ void P_UnsetThingPosition (mobj_t* thing)
 void
 P_SetThingPosition (mobj_t* thing)
 {
-    subsector_t*	ss;
+    P_SetThingPositionIn (thing, R_PointInSubsector (thing->x,thing->y));
+}
+
+// DOOMATHON: the same, for a caller that already has the subsector of
+// (thing->x, thing->y).
+void
+P_SetThingPositionIn
+( mobj_t*	thing,
+  subsector_t*	ss )
+{
     sector_t*		sec;
     int			blockx;
     int			blocky;
@@ -398,7 +407,6 @@ P_SetThingPosition (mobj_t* thing)
 
     
     // link into subsector
-    ss = R_PointInSubsector (thing->x,thing->y);
     thing->subsector = ss;
     
     if ( ! (thing->flags & MF_NOSECTOR) )

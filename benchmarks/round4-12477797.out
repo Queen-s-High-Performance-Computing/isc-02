@@ -1,0 +1,50 @@
+host: frnt201.frontenac.local  cpus: 16 (9-16,73-80)
+load: 38.05, 55.97, 63.15   date: Mon 16 Nov 2026 02:34:38 PM EST
+
+== 1. build with no modules loaded ==
+compiler: gcc (Gentoo 12.3.1_p20230526 p2) 12.3.1 20230526
+build OK
+  run 1: 128 valid demos, 0 invalid
+    128 DGVALID tics=7116 matched=7115
+
+== 2. normal build ==
+compiler: gcc (Gentoo 12.3.1_p20230526 p2) 12.3.1 20230526
+build OK
+demo1   run 1: 176 valid demos, 0 invalid
+    176 DGVALID tics=7116 matched=7115
+demo2   run 1: 192 valid demos, 0 invalid
+    192 DGVALID tics=7088 matched=7088
+demo3   run 1: 176 valid demos, 0 invalid
+    176 DGVALID tics=6041 matched=6041
+Expected: 0 invalid; matched=7115 (or 7116) / 7088 / 6041.
+
+== 3. copies per core: demos/s on demo1 + demo3 (median of 3) ==
+  SMT=1            17.906   (invalid 0)
+  SMT=2            18.97   (invalid 0)
+  SMT=2 FBSHARE=1  23.066   (invalid 0)
+Chosen for step 4: SMT=1 FBSHARE=0  (FBSHARE_OK=0)
+
+== 4. scripts/score.sh <demo> 120 3 with SMT=1 FBSHARE=0 ==
+Scoring demo1: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 1114 valid demos, 0 invalid
+  run 2: 1026 valid demos, 0 invalid
+  run 3: 1016 valid demos, 0 invalid
+SCORE: 1026 valid demo1 demos in 120s (median of 3)
+   1016 DGVALID tics=7116 matched=7115
+Scoring demo2: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 1074 valid demos, 0 invalid
+  run 2: 1048 valid demos, 0 invalid
+  run 3: 1126 valid demos, 0 invalid
+SCORE: 1074 valid demo2 demos in 120s (median of 3)
+   1126 DGVALID tics=7088 matched=7088
+Scoring demo3: 3 run(s) of 120s on frnt201.frontenac.local, 16 CPUs
+  run 1: 998 valid demos, 0 invalid
+  run 2: 987 valid demos, 0 invalid
+  run 3: 1014 valid demos, 0 invalid
+SCORE: 998 valid demo3 demos in 120s (median of 3)
+   1014 DGVALID tics=6041 matched=6041
+
+To make this the default, the two lines near the top of scripts/run.sh become:
+  SMT=${SMT:-1}
+  FBSHARE=${FBSHARE:-0}
+Saved to benchmarks/round4-frnt201-20261116-1434.txt

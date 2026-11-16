@@ -1,51 +1,110 @@
-# DOOMATHON: ISC track starter kit
+# DOOMATHON ISC track: isc-02
+
+## Result
+
+**1366 valid demo2 demos in 120 seconds** (median of three runs: 1366, 1370, 1364; 0 invalid), measured with the submitted code and defaults using the official command `scripts/score.sh demo2 120 3` on 16 CPUs of `frnt201` (8 physical cores x 2 hardware threads). Slurm job 12478285, 16 November 2026. Practice jobs are limited to 16 CPUs, so this is not a full-node run, and the node was shared with other jobs at the time.
+
+| Demo | **Submitted: round 4 + shared frame buffer** | Round 4, private frame buffers | Round 3 (11 Nov) |
+|---|---|---|---|
+| demo1 | **1306** (1308, 1306, 1306) | 1044 | 1010 |
+| demo2 | **1366** (1366, 1370, 1364) | 1076 | 1024 |
+| demo3 | **1306** (1306, 1310, 1306) | 1094 | 1022 |
+
+All three setups ran in the same job, one after another for each demo, so they faced the same node conditions. Every run had 0 invalid demos, with 7115 / 7088 / 6041 frames matching the reference. Raw output is in [`benchmarks/`](benchmarks/).
+
+For comparison, the unmodified kit finished 64 demos in 30 seconds on the same 16 CPUs, about 6.7 s per demo per copy. The submitted version needs about 1.4 s per demo per copy, roughly 4.8 times faster.
+
+## Timeline
+
+### 9 November: baseline and round 1
+
+The first cluster run of the unmodified kit (job 12440760) gave 64 / 64 / 64 valid demos in 30 seconds. Profiling one copy showed where the time went:
+
+| Change | Why it helped | Effect |
+|---|---|---|
+| Screen melt no longer waits on the clock | The level-start melt spent about 1.1 s per demo sleeping. Every melt step is still drawn. | 5.6 s to 4.5 s per demo |
+| Frame conversion rewritten | Scaling 320x200 to 640x400 took 70% of the CPU time, with a branch and a pointer reload per pixel. Now a 32-bit palette is built once per palette change, two pixels go out per 64-bit store, and each finished row is copied to the row below. Bit-identical output. | 3.6 s to 1.7 s per demo |
+| `-O3 -march=native` instead of `-Os` | The kit optimized for size. | 5-10% |
+| 2 MB-aligned frame buffer and zone memory with huge pages | Fewer TLB misses. | small |
+| Load once, fork a fresh child per demo | The game data is loaded once per copy; each demo starts from the clean pre-demo state in a new child process and is computed in full. | about 2% |
+| `run.sh`: one pinned copy per CPU | Each copy keeps its cache warm. | |
+
+Result: **220 / 233 / 215 valid demos in 30 s**, 3.4 to 3.6 times the kit.
+
+### 10 November: hardware probe and round 2
+
+A probe job (12449038) confirmed the node: 2 x Intel Xeon Gold 6430 (Sapphire Rapids), 64 cores / 128 hardware threads, 48 KB L1d and 2 MB L2 per core (shared by its two threads), 60 MB L3 per socket, AVX-512, gcc 12.3 by default.
+
+Round 2 kept the wall and floor drawers' table pointers in registers instead of reloading them for every pixel (about 2%).
+
+### 11 November: round 3
+
+| Change | Effect |
+|---|---|
+| Link-time optimization, plus `-fwrapv -fno-strict-aliasing` so the 1993 fixed-point code cannot depend on how aggressive the compiler is | 3-6% |
+| Floors and ceilings drawn 8 pixels at a time with AVX-512 | about 1.5% |
+| Wall loop keeps its per-column state in local variables | about 1.5% |
+| Wall and sprite columns drawn 4 pixels per step | small |
+| A finished demo exits directly; the original went through `I_Error`, which started a shell every time | 0.5% |
+| WAD read into memory once; no disk reads during the run | robustness |
+| New launcher: one process per physical core loads the game and starts one pinned worker per hardware thread | faster start |
+| Shared frame buffer written and verified, still off | |
+
+Tried and dropped: nine frame-conversion variants (none faster), profile-guided optimization (no gain on top of LTO, and it reuses data from a training run), `-O2` (5-7% slower), 512-bit floor drawing (slower), clang (faster, but organizers build with the default gcc).
+
+Result: **1080 / 1116 / 1022 valid demos in 120 s** (median of 3, job 12449478).
+
+### 15-16 November: round 4
+
+The biggest finding was that gcc 12, the compiler on `frnt201`, did not vectorize the round 1 conversion loop, while gcc 13 did. The round 3 numbers on the cluster had been running a scalar frame conversion.
+
+| Change | Effect |
+|---|---|
+| Frame conversion written with AVX2: 8 source pixels per step, one palette gather, both output rows stored directly | 9-16% |
+| Texture column tables fetched once per wall instead of once per column; a cached column is returned without a function call | 1.5% fewer instructions |
+| Status bar numbers redrawn only when they change | about 1% |
+| Plain executable: no PIE, stack protector or CET where the compiler enables them by default (each flag tested first) | up to 3% fewer instructions |
+| Floor and ceiling setup checks 32 columns at once with AVX-512 and only builds spans where one starts or ends (85-88% of columns need no work) | about 5% |
+| A moving monster no longer searches the BSP tree twice for the same position | 0.3% |
+| **Shared frame buffer turned on** (see below) | **+19-27% on frnt201** |
+
+Checks on the cluster:
+
+- Job 12477797: the code builds with no modules loaded (gcc 12.3.1); demo1-3 valid. Copies per core on demo1 + demo3 (30 s runs): one copy per core 17.9 demos/s, two copies 19.0, two copies with a shared frame buffer 23.1.
+- Job 12478285: round 3, round 4 and round 4 with the shared frame buffer on all three demos at 120 s x 3 (table above). Round 4 alone beats round 3 by 3-7%; the shared frame buffer adds 19-27% on top, and its runs agree within 0.5% even with the node at load 244.
+
+## The shared frame buffer
+
+The two hardware threads of a core share its 2 MB L2 cache. Each copy rewrites a 1 MB frame every tic, so two copies with private frame buffers do not fit, and both keep pushing data out to the slower shared L3.
+
+With `FBSHARE=1` (the default in `scripts/run.sh`) the two copies on a core take turns using one frame buffer. A copy takes a lock, writes its complete 640x400 frame, `platform.c` fingerprints it, and the lock is released. Each copy still draws every frame of every demo in full, and each frame is checked while it is in the buffer. Nothing is skipped, stored or reused. Code: `doom/d_workers.c` and `doom/i_video.c`. `FBSHARE=0` turns it off.
+
+## What limits us now
+
+- **CPU:** the renderer's inner loops, mainly wall columns (about a quarter of the time), sprites and floor spans, and the branch mispredictions they cause.
+- **Memory writes:** each copy writes a 1 MB frame every tic; the conversion now runs at about the speed of a plain 1 MB memory write.
+- **Cache:** with the shared frame buffer, the two copies of a core fit in its L2. On the full node, 128 copies share two 60 MB L3 caches and the clock is lower with all cores busy, so the 16-CPU numbers are an upper bound per core.
+- **Not limits:** memory capacity, disk I/O (none during the run) and start-up (about 2 ms per demo).
+
+## How every change was checked
+
+- The official validator on demo1-3 after every change: 0 invalid, 7115 (or 7116) / 7088 / 6041 frames matching.
+- A test build that hashes all 256,000 pixels of every frame and compares each tic with the original engine. The original itself varies between runs on 6, 2 and 3 frames of demo1, 2 and 3; on every other frame our version is identical, in every launch mode and with gcc 12, gcc 13 and clang.
+- `doom/platform.c`, `reference/`, `scripts/score.sh` and `get_freedoom.sh` are unchanged. `run.sh` uses no `srun`, `sbatch` or `ssh`, and starts no `setsid`, `nohup`, `disown` or daemons; every process stays in the scorer's process group.
+
+More detail on each change: [TEAM-NOTES.md](TEAM-NOTES.md).
+
+## AI tools
+
+<!-- Required by RULES.md: which AI tools were used, if any, and how. -->
+
+---
+
+# The starter kit
 
 **Goal:** finish as many valid Doom demos as possible in **2 minutes** on `frnt201`, the club's node on Frontenac.
 
 A *demo* is a recorded game that Doom plays back by itself. Your team decides how to run it: how many copies, how they're compiled, how they share the CPUs. Read [RULES.md](RULES.md) before you start, and [OPTIMIZATION.md](OPTIMIZATION.md) for ideas.
-
-
-
-## Submission
-
-### Best score
-
-**1116 valid demos in 120 s on demo2** (`scripts/score.sh demo2 120 3`, median of 3 runs, 0 invalid).
-
-Measured on frnt201 with **16 CPUs** (8 physical cores x 2 hardware threads, CPUs 0-7 and 64-71), the most a practice job may use. Slurm job 12449478, 2026-11-11 
-Not a full-node run: the official run uses all 128 CPUs, and `scripts/run.sh` uses every CPU it is given.
-
-### Results (frnt201, 16 CPUs, `scripts/score.sh <demo> 120 3`)
-
-| Demo | Run 1 | Run 2 | Run 3 | Score (median) | Invalid | Frames matched |
-|---|---|---|---|---|---|---|
-| demo1 | 1080 | 1080 | 1084 | **1080** | 0 | 7115 / 7116 tics |
-| demo2 | 1116 | 1116 | 1116 | **1116** | 0 | 7088 / 7088 tics |
-| demo3 | 1022 | 1024 | 1022 | **1022** | 0 | 6041 / 6041 tics |
-
-The three runs of each demo agree within 0.4%. Raw output: `benchmarks/run120-frnt201-20261111-0159.txt` and `benchmarks/run120-12449478.out`.
-
-### What I changed and why it helped
-
-Details and measurements for every change are in `TEAM-NOTES.md`.
-
-1. **Screen melt no longer waits on the clock.** The level-start "melt" transition slept about 1.1 s per demo. Every step is still drawn; it just doesn't sleep between them
-2. **Frame conversion rewritten** (`i_video.c`). Converting Doom's 320x200 image into the 640x400 frame took 70% of CPU time. It now uses a 32-bit palette built once, writes two pixels at a time and copies each finished row to the row below. The output is bit-identical.
-3. **Compiler flags** (`Makefile`): `-O3 -march=native -flto=auto` instead of `-Os`. Link-time optimization lets the compiler optimize across source files. `-fwrapv -fno-strict-aliasing` keep the 1993 code behaving the same on any compiler version.
-4. **Game data loaded once per process.** Each demo then runs in a freshly forked child process, so it starts from the clean pre-demo state and is computed in full from tic 0. The WAD file is read into memory once, so the timed run does no disk I/O.
-5. **Renderer inner loops** (`r_segs.c`, `r_draw.c`, `r_draw.h`, `r_things.c`). The wall loop keeps its working values in registers instead of re-reading globals after every pixel; wall and sprite columns are drawn 4 pixels per step with less arithmetic; floors and ceilings are drawn 8 pixels at a time with AVX-512.
-6. **A finished demo exits directly.** The original ended through an error handler that started a shell to look for a pop-up program, two extra processes per demo.
-7. **Launcher** (`scripts/run.sh`, `doom/d_workers.c`). One process per physical core loads the game, then starts one copy per hardware thread, each pinned to its own CPU and writing its own log. All copies start within milliseconds, every process stays in the scorer's process group, and each child is killed if its parent dies.
-
-Every frame is still the full 640x400 image and is validated. Beyond the official check, I compared all 256,000 pixels of every frame with the original engine on all three demos: they are identical wherever the original engine is itself repeatable
-
-### What limits now 
-
-- **CPU:** the renderer's inner loops (walls, floors, sprites) and branch mispredictions.
-- **Cache:** each copy rewrites a 1 MB frame every tic. Two copies on one core share its 2 MB L2 cache, so they push each other's data out to the L3.
-- **Memory bandwidth:** not a limit while frame buffers stay in L2/L3.
-- **Memory capacity, I/O, start-up:** not limits. Starting each demo takes about 2 ms, and the logs are one short line per demo.
-
 
 ## What's in here
 

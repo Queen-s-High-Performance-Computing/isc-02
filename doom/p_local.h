@@ -193,6 +193,7 @@ P_PathTraverse
 
 void P_UnsetThingPosition (mobj_t* thing);
 void P_SetThingPosition (mobj_t* thing);
+void P_SetThingPositionIn (mobj_t* thing, subsector_t* ss);
 
 
 //

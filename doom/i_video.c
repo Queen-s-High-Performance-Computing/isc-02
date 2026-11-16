@@ -321,13 +321,71 @@ void I_UpdateNoBlit (void)
 //
 
 // DOOMATHON: fast path for the only mode scored (RGBA8888, 2x scaling into
-// an exactly 640x400 buffer). The original converted pixel by pixel with a
-// per-pixel bpp branch and reloaded s_Fb on every store (char* aliasing).
-// Here each 8-bit index is looked up once in a prebuilt 32-bit palette, the
-// pixel is written twice, and the finished 640-pixel row is copied to the
-// row below. The output is bit-identical to the original loop.
+// an exactly 640x400 buffer). Each 8-bit pixel is looked up in a 32-bit
+// palette (rebuilt when the palette changes) and written four times: twice
+// across, on two rows. Same output as the original loop, bit for bit.
 static uint32_t pal32[256];
 static boolean pal32_dirty = true;
+
+#if defined(__AVX2__) && !defined(DOOM_NO_SIMD)
+#include <immintrin.h>
+
+// Eight source pixels per pass: one gather from the palette, each colour
+// doubled, and both output rows stored straight from the registers (64
+// bytes = one cache line per row), so no row is read back to be copied.
+static inline void I_ConvertFrame (const uint8_t *restrict in,
+                                   uint32_t *restrict out)
+{
+    const __m256i dup_lo = _mm256_setr_epi32(0, 0, 1, 1, 2, 2, 3, 3);
+    const __m256i dup_hi = _mm256_setr_epi32(4, 4, 5, 5, 6, 6, 7, 7);
+    int y, x;
+
+    for (y = 0; y < SCREENHEIGHT; y++)
+    {
+        uint32_t *restrict row0 = out;
+        uint32_t *restrict row1 = out + DOOMGENERIC_RESX;
+
+        for (x = 0; x < SCREENWIDTH; x += 8)
+        {
+            __m256i idx = _mm256_cvtepu8_epi32(
+                              _mm_loadl_epi64((const __m128i *) (in + x)));
+            __m256i pix = _mm256_i32gather_epi32((const int *) pal32, idx, 4);
+            __m256i a = _mm256_permutevar8x32_epi32(pix, dup_lo);
+            __m256i b = _mm256_permutevar8x32_epi32(pix, dup_hi);
+
+            _mm256_storeu_si256((__m256i *) (row0 + 2 * x), a);
+            _mm256_storeu_si256((__m256i *) (row0 + 2 * x + 8), b);
+            _mm256_storeu_si256((__m256i *) (row1 + 2 * x), a);
+            _mm256_storeu_si256((__m256i *) (row1 + 2 * x + 8), b);
+        }
+
+        in  += SCREENWIDTH;
+        out += 2 * DOOMGENERIC_RESX;
+    }
+}
+
+#else
+
+static inline void I_ConvertFrame (const uint8_t *restrict in,
+                                   uint32_t *restrict out)
+{
+    int y, x;
+
+    for (y = 0; y < SCREENHEIGHT; y++)
+    {
+        uint64_t *restrict o = (uint64_t *) out;
+        for (x = 0; x < SCREENWIDTH; x++)
+        {
+            uint64_t p = pal32[in[x]];
+            o[x] = p | (p << 32);
+        }
+        memcpy(out + DOOMGENERIC_RESX, out, DOOMGENERIC_RESX * sizeof(uint32_t));
+        in  += SCREENWIDTH;
+        out += 2 * DOOMGENERIC_RESX;
+    }
+}
+
+#endif
 
 static void I_FinishUpdateFast (void)
 {
@@ -346,22 +404,7 @@ static void I_FinishUpdateFast (void)
     // fingerprinted as one step.
     D_FrameLock();
 
-    const uint8_t *restrict in = I_VideoBuffer;
-    uint32_t *restrict out = (uint32_t *) DG_ScreenBuffer;
-    int y, x;
-
-    for (y = 0; y < SCREENHEIGHT; y++)
-    {
-        uint64_t *restrict o = (uint64_t *) out;
-        for (x = 0; x < SCREENWIDTH; x++)
-        {
-            uint64_t p = pal32[in[x]];
-            o[x] = p | (p << 32);
-        }
-        memcpy(out + DOOMGENERIC_RESX, out, DOOMGENERIC_RESX * sizeof(uint32_t));
-        in  += SCREENWIDTH;
-        out += 2 * DOOMGENERIC_RESX;
-    }
+    I_ConvertFrame(I_VideoBuffer, (uint32_t *) DG_ScreenBuffer);
 
     DG_DrawFrame();
 

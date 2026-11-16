@@ -68,6 +68,7 @@ STlib_initNum
     n->x	= x;
     n->y	= y;
     n->oldnum	= 0;
+    n->drawn	= false;
     n->width	= width;
     n->num	= num;
     n->on	= on;
@@ -147,7 +148,21 @@ STlib_updateNum
 ( st_number_t*		n,
   boolean		refresh )
 {
-    if (*n->on) STlib_drawNum(n, refresh);
+    // DOOMATHON: the original redrew every number on every frame. A number
+    // that has not changed since it was last drawn, with no full refresh
+    // of the status bar in between, is already on screen with exactly
+    // these pixels, so it is left as it is.
+    if (!*n->on)
+    {
+	n->drawn = false;
+	return;
+    }
+
+    if (refresh || !n->drawn || n->oldnum != *n->num)
+    {
+	STlib_drawNum(n, refresh);
+	n->drawn = true;
+    }
 }
 
 

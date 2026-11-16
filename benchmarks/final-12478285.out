@@ -1,0 +1,57 @@
+host frnt201.frontenac.local  cpus 0-7,64-71  load 193.58 174.84 117.40
+BUILD OK /global/teaching-home/sa6079049/isc-02-r3
+BUILD OK /global/teaching-home/sa6079049/isc-02-r4
+== demo1  round3  SMT=2 FBSHARE=0  (load 193.69)
+  run 1: 984 valid demos, 0 invalid
+  run 2: 1010 valid demos, 0 invalid
+  run 3: 1094 valid demos, 0 invalid
+SCORE: 1010 valid demo1 demos in 120s (median of 3)
+   1094 DGVALID tics=7116 matched=7115
+== demo1  round4  SMT=2 FBSHARE=0  (load 35.09)
+  run 1: 1072 valid demos, 0 invalid
+  run 2: 1044 valid demos, 0 invalid
+  run 3: 1044 valid demos, 0 invalid
+SCORE: 1044 valid demo1 demos in 120s (median of 3)
+   1044 DGVALID tics=7116 matched=7115
+== demo1  round4  SMT=2 FBSHARE=1  (load 236.99)
+  run 1: 1308 valid demos, 0 invalid
+  run 2: 1306 valid demos, 0 invalid
+  run 3: 1306 valid demos, 0 invalid
+SCORE: 1306 valid demo1 demos in 120s (median of 3)
+   1306 DGVALID tics=7116 matched=7115
+== demo2  round3  SMT=2 FBSHARE=0  (load 244.42)
+  run 1: 1016 valid demos, 0 invalid
+  run 2: 1024 valid demos, 0 invalid
+  run 3: 1028 valid demos, 0 invalid
+SCORE: 1024 valid demo2 demos in 120s (median of 3)
+   1028 DGVALID tics=7088 matched=7088
+== demo2  round4  SMT=2 FBSHARE=0  (load 244.57)
+  run 1: 1076 valid demos, 0 invalid
+  run 2: 1074 valid demos, 0 invalid
+  run 3: 1092 valid demos, 0 invalid
+SCORE: 1076 valid demo2 demos in 120s (median of 3)
+   1092 DGVALID tics=7088 matched=7088
+== demo2  round4  SMT=2 FBSHARE=1  (load 244.30)
+  run 1: 1366 valid demos, 0 invalid
+  run 2: 1370 valid demos, 0 invalid
+  run 3: 1364 valid demos, 0 invalid
+SCORE: 1366 valid demo2 demos in 120s (median of 3)
+   1364 DGVALID tics=7088 matched=7088
+== demo3  round3  SMT=2 FBSHARE=0  (load 242.81)
+  run 1: 1000 valid demos, 0 invalid
+  run 2: 1024 valid demos, 0 invalid
+  run 3: 1022 valid demos, 0 invalid
+SCORE: 1022 valid demo3 demos in 120s (median of 3)
+   1022 DGVALID tics=6041 matched=6041
+== demo3  round4  SMT=2 FBSHARE=0  (load 16.92)
+  run 1: 1094 valid demos, 0 invalid
+  run 2: 1094 valid demos, 0 invalid
+  run 3: 1094 valid demos, 0 invalid
+SCORE: 1094 valid demo3 demos in 120s (median of 3)
+   1094 DGVALID tics=6041 matched=6041
+== demo3  round4  SMT=2 FBSHARE=1  (load 16.04)
+  run 1: 1306 valid demos, 0 invalid
+  run 2: 1310 valid demos, 0 invalid
+  run 3: 1306 valid demos, 0 invalid
+SCORE: 1306 valid demo3 demos in 120s (median of 3)
+   1306 DGVALID tics=6041 matched=6041

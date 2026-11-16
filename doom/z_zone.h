@@ -62,6 +62,22 @@ void    Z_ChangeUser(void *ptr, void **user);
 int     Z_FreeMemory (void);
 unsigned int Z_ZoneSize(void);
 
+typedef struct memblock_s
+{
+    int			size;	// including the header and possibly tiny fragments
+    void**		user;
+    int			tag;	// PU_FREE if this is free
+    int			id;	// should be ZONEID
+    struct memblock_s*	next;
+    struct memblock_s*	prev;
+} memblock_t;
+
+// The tag an allocated block has now.
+static inline int Z_TagOf(const void *ptr)
+{
+    return ((const memblock_t *) ptr - 1)->tag;
+}
+
 //
 // This is used to get the local FILE:LINE info from CPP
 // prior to really call the function in question.
