@@ -96,7 +96,11 @@ More detail on each change: [TEAM-NOTES.md](TEAM-NOTES.md).
 
 ## AI tools
 
-<!-- Required by RULES.md: which AI tools were used, if any, and how. -->
+I used Claude (Anthropic) as a coding assistant throughout the project: model Claude Opus 5.5 at medium-high effort. I used it to write and debug the optimizations and to get help for the cluster scripts, build the full-frame checking tool, check every change against RULES.md, and draft this README and TEAM-NOTES.md.
+
+I set the direction and made the decisions: I ran the hardware probe and every build and benchmark on frnt201 myself, compared the results, and chose what to keep, including turning on the shared frame buffer. I applied my own understanding of the computer architecture (the shared L2 cache per core, SMT, vector instructions) to judge which ideas made sense. Every number in this README comes from my own runs on frnt201; the raw output is in benchmarks/ 
+
+
 
 ---
 
